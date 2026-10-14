@@ -26,6 +26,30 @@ interface KakaoMessageBubbleProps {
   onDeleteMessage: (messageId: string) => void;
 }
 
+const AVATAR_COLORS = [
+  'bg-[#FFD1D1] text-[#C53030]',
+  'bg-[#D1E8FF] text-[#2B6CB0]',
+  'bg-[#D6BCFA] text-[#6B46C1]',
+  'bg-[#FED7D7] text-[#9B2C2C]',
+  'bg-[#C6F6D5] text-[#22543D]',
+  'bg-[#FEEBC8] text-[#7B341E]',
+];
+const avatarColorCache = new Map<string, string>();
+
+function getAvatarBg(name: string): string {
+  const cached = avatarColorCache.get(name);
+  if (cached) return cached;
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const color = AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  if (avatarColorCache.size < 500) {
+    avatarColorCache.set(name, color);
+  }
+  return color;
+}
+
 export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
   message,
   isMe,
@@ -35,7 +59,7 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
   onToggleStatus,
   onDeleteMessage,
 }) => {
-  const [showReplies, setShowReplies] = useState(true);
+  const [showReplies, setShowReplies] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
 
@@ -46,8 +70,8 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
 
   const isHostQuestion = Boolean(message.isQuestion && message.isHostReply);
   const canReply = isHost || isHostQuestion;
-  const isAnswered = message.status === 'answered';
   const rawReplies = message.replies || [];
+  const isAnswered = message.status === 'answered' || rawReplies.length > 0;
 
   // 호스트 질문이고 현재 사용자가 청중인 경우: 블라인드 모드로 본인 답변만 노출
   const replies = (isHostQuestion && !isHost)
@@ -64,23 +88,6 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
     }
   };
 
-  // Avatar pastel background colors based on nickname
-  const getAvatarBg = (name: string) => {
-    const colors = [
-      'bg-[#FFD1D1] text-[#C53030]',
-      'bg-[#D1E8FF] text-[#2B6CB0]',
-      'bg-[#D6BCFA] text-[#6B46C1]',
-      'bg-[#FED7D7] text-[#9B2C2C]',
-      'bg-[#C6F6D5] text-[#22543D]',
-      'bg-[#FEEBC8] text-[#7B341E]',
-    ];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const idx = Math.abs(hash) % colors.length;
-    return colors[idx];
-  };
 
   /* -------------------------------------------------------------
    * 1. MY MESSAGE (내가 보낸 메시지 - 우측 노란색 말풍선 #FEE500)
@@ -199,12 +206,21 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
                   <button
                     type="button"
                     onClick={() => setShowReplies(!showReplies)}
-                    className="flex items-center gap-1 text-[12px] font-semibold text-black/80 hover:text-black transition-colors"
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] sm:text-[12px] font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
+                      showReplies
+                        ? 'bg-[#0066cc] text-white hover:bg-[#0055b3]'
+                        : isHostQuestion
+                        ? 'bg-white text-[#0066cc] border border-[#0066cc]/40 hover:bg-[#f0f4f8]'
+                        : 'bg-white text-[#b38600] border border-[#fae100] hover:bg-[#fffbe6]'
+                    }`}
                   >
-                    <MessageCircle className="w-3.5 h-3.5 text-[#0066cc]" />
+                    <MessageSquare className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>
-                      {isHostQuestion && !isHost ? `내 답변 ${replies.length}개` : `답변 ${replies.length}개`}{' '}
-                      {showReplies ? '접기' : '보기'}
+                      {isHostQuestion
+                        ? (isHost ? '청중 실시간 응답' : '내 제출 답변')
+                        : '발표자 공식 답변'}{' '}
+                      <span className="underline font-black">{replies.length}개</span>{' '}
+                      {showReplies ? '접기 ▲' : '모두 펼쳐보기 ▼'}
                     </span>
                   </button>
                 ) : (
@@ -230,34 +246,55 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
                 )}
               </div>
 
-              {/* Replies List */}
+              {/* Accordion Expanded Replies List */}
               {showReplies && replies.length > 0 && (
-                <div className="space-y-1.5 pl-1">
-                  {replies.map((rep) => (
-                    <div
-                      key={rep.id}
-                      className="p-2.5 rounded-[10px] bg-white/80 border-l-[3px] border-[#0066cc] text-[13px] text-black shadow-xs"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1 font-semibold text-[12px] text-[#0066cc]">
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>{rep.nickname}</span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#0066cc]/10 text-[#0066cc] font-normal">
-                            {rep.isHostReply ? '발표자 공식 답변' : '내 제출 답변'}
+                <div className="space-y-2 mt-2 pt-1 border-t border-black/[0.08] animate-fade-in">
+                  {replies.map((rep) => {
+                    const isMyReply = Boolean(currentNickname && rep.nickname === currentNickname);
+                    return (
+                      <div
+                        key={rep.id}
+                        className={`p-3 rounded-[14px] text-black shadow-xs transition-all ${
+                          rep.isHostReply
+                            ? 'bg-[#FFF9E6] border border-[#f5da00]'
+                            : 'bg-white/95 border border-black/[0.08]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1.5 mb-1.5 text-[11px]">
+                          <div className="flex items-center gap-1.5 font-bold">
+                            {rep.isHostReply ? (
+                              <Crown className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center text-[10px] font-black flex-shrink-0">
+                                {rep.nickname.slice(0, 1).toUpperCase()}
+                              </div>
+                            )}
+                            <span className="text-[#1d1d1f] font-semibold">{rep.nickname}</span>
+                            <span
+                              className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
+                                rep.isHostReply
+                                  ? 'bg-amber-500/15 text-amber-800'
+                                  : isMyReply
+                                  ? 'bg-[#0066cc]/15 text-[#0066cc]'
+                                  : 'bg-black/[0.06] text-[#556677]'
+                              }`}
+                            >
+                              {rep.isHostReply ? '발표자 공식 답변' : isMyReply ? '내 제출 답변' : '청중 응답'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-[#86868b]">
+                            {new Date(rep.createdAt).toLocaleTimeString('ko-KR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                           </span>
                         </div>
-                        <span className="text-[10px] text-black/50">
-                          {new Date(rep.createdAt).toLocaleTimeString('ko-KR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
+                        <p className="text-[13px] sm:text-[14px] text-[#111111] leading-relaxed whitespace-pre-wrap break-words pl-0.5">
+                          {rep.content}
+                        </p>
                       </div>
-                      <p className="text-[13px] text-black/90 leading-snug whitespace-pre-wrap break-words">
-                        {rep.content}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -432,12 +469,21 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
                     <button
                       type="button"
                       onClick={() => setShowReplies(!showReplies)}
-                      className="flex items-center gap-1 font-semibold text-[#0066cc] hover:text-[#0077ed]"
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] sm:text-[12px] font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
+                        showReplies
+                          ? 'bg-[#0066cc] text-white hover:bg-[#0055b3]'
+                          : isHostQuestion
+                          ? 'bg-white text-[#0066cc] border border-[#0066cc]/40 hover:bg-[#f0f4f8]'
+                          : 'bg-white text-[#b38600] border border-[#fae100] hover:bg-[#fffbe6]'
+                      }`}
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
+                      <MessageSquare className="w-3.5 h-3.5 flex-shrink-0" />
                       <span>
-                        {isHostQuestion && !isHost ? `내 답변 ${replies.length}개` : `답변 ${replies.length}개`}{' '}
-                        {showReplies ? '접기' : '보기'}
+                        {isHostQuestion
+                          ? (isHost ? '청중 실시간 응답' : '내 제출 답변')
+                          : '발표자 공식 답변'}{' '}
+                        <span className="underline font-black">{replies.length}개</span>{' '}
+                        {showReplies ? '접기 ▲' : '모두 펼쳐보기 ▼'}
                       </span>
                     </button>
                   ) : (
@@ -463,34 +509,55 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
                   )}
                 </div>
 
-                {/* Replies List (KakaoTalk Quoted Box Style) */}
+                {/* Accordion Expanded Replies List */}
                 {showReplies && replies.length > 0 && (
-                  <div className="space-y-1.5">
-                    {replies.map((rep) => (
-                      <div
-                        key={rep.id}
-                        className="p-2.5 rounded-[10px] bg-[#fffde6] border-l-[3px] border-[#FEE500] text-[13px] text-black"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-1 font-semibold text-[12px] text-[#1d1d1f]">
-                            <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />
-                            <span>{rep.nickname}</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/5 text-black font-normal">
-                              {rep.isHostReply ? '발표자 공식 답변' : (isHostQuestion && !isHost ? '내 제출 답변' : '청중 응답')}
+                  <div className="space-y-2 mt-2 pt-1 border-t border-black/[0.08] animate-fade-in">
+                    {replies.map((rep) => {
+                      const isMyReply = Boolean(currentNickname && rep.nickname === currentNickname);
+                      return (
+                        <div
+                          key={rep.id}
+                          className={`p-3 rounded-[14px] text-black shadow-xs transition-all ${
+                            rep.isHostReply
+                              ? 'bg-[#FFF9E6] border border-[#f5da00]'
+                              : 'bg-white border border-black/[0.08]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1.5 mb-1.5 text-[11px]">
+                            <div className="flex items-center gap-1.5 font-bold">
+                              {rep.isHostReply ? (
+                                <Crown className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                              ) : (
+                                <div className="w-4 h-4 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center text-[10px] font-black flex-shrink-0">
+                                  {rep.nickname.slice(0, 1).toUpperCase()}
+                                </div>
+                              )}
+                              <span className="text-[#1d1d1f] font-semibold">{rep.nickname}</span>
+                              <span
+                                className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
+                                  rep.isHostReply
+                                    ? 'bg-amber-500/15 text-amber-800'
+                                    : isMyReply
+                                    ? 'bg-[#0066cc]/15 text-[#0066cc]'
+                                    : 'bg-black/[0.06] text-[#556677]'
+                                }`}
+                              >
+                                {rep.isHostReply ? '발표자 공식 답변' : isMyReply ? '내 제출 답변' : '청중 응답'}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-[#86868b]">
+                              {new Date(rep.createdAt).toLocaleTimeString('ko-KR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
                             </span>
                           </div>
-                          <span className="text-[10px] text-[#86868b]">
-                            {new Date(rep.createdAt).toLocaleTimeString('ko-KR', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
+                          <p className="text-[13px] sm:text-[14px] text-[#111111] leading-relaxed whitespace-pre-wrap break-words pl-0.5">
+                            {rep.content}
+                          </p>
                         </div>
-                        <p className="text-[13px] text-[#111111] leading-snug whitespace-pre-wrap break-words">
-                          {rep.content}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 

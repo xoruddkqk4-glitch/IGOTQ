@@ -9,7 +9,7 @@ let currentSettings: SystemSettings = {
 };
 
 export function getSystemSettings(): SystemSettings {
-  return { ...currentSettings };
+  return currentSettings;
 }
 
 export function updateSystemSettings(newSettings: Partial<SystemSettings>): SystemSettings {

@@ -227,9 +227,9 @@ export function setupSocketServer(io: SocketIOServer) {
 
         await store.addMessage(slug, replyMsg);
 
-        // 호스트가 일반 질문에 답변한 경우에만 부모 질문을 자동으로 'answered'로 전환
+        // 호스트의 질문에 청중이 답을 달거나, 청중 질문에 호스트가 답을 달면 자동으로 부모 질문을 'answered'로 전환
         let updatedParent: StoredMessage | null = null;
-        if (isAuthorHost && !isHostQuestion) {
+        if (parentMsg.status !== 'answered') {
           updatedParent = await store.updateMessage(slug, parentId, { status: 'answered' });
         }
 
@@ -241,9 +241,7 @@ export function setupSocketServer(io: SocketIOServer) {
         }
 
         // Broadcast updated thread
-        const allMsgs = await store.getMessages(slug);
-        const threaded = buildThreadedMessages(allMsgs);
-        const targetThread = threaded.find((t) => t.id === parentId);
+        const targetThread = await buildSingleThread(store, slug, parentId);
 
         if (targetThread) {
           io.to(`room:${slug}`).emit('message_updated', { message: targetThread });
@@ -272,9 +270,7 @@ export function setupSocketServer(io: SocketIOServer) {
           firestoreRepo.saveMessage(room.id, updated).catch((e) => console.error('Cloud update status err:', e));
         }
 
-        const allMsgs = await store.getMessages(slug);
-        const threaded = buildThreadedMessages(allMsgs);
-        const target = threaded.find((t) => t.id === payload.messageId);
+        const target = await buildSingleThread(store, slug, payload.messageId);
 
         if (target) {
           io.to(`room:${slug}`).emit('message_updated', { message: target });
@@ -315,8 +311,9 @@ export function setupSocketServer(io: SocketIOServer) {
         const room = await store.getRoom(slug);
         if (!room) return;
 
+        const batch: StoredMessage[] = [];
         for (const tm of payload.messages) {
-          const rootMsg: StoredMessage = {
+          batch.push({
             id: tm.id,
             roomId: room.id,
             parentId: null,
@@ -327,11 +324,10 @@ export function setupSocketServer(io: SocketIOServer) {
             status: tm.status,
             isRestored: true,
             createdAt: tm.createdAt,
-          };
-          await store.addMessage(slug, rootMsg);
+          });
 
           for (const rep of tm.replies) {
-            const repMsg: StoredMessage = {
+            batch.push({
               id: rep.id,
               roomId: room.id,
               parentId: tm.id,
@@ -342,10 +338,10 @@ export function setupSocketServer(io: SocketIOServer) {
               status: 'answered',
               isRestored: true,
               createdAt: rep.createdAt,
-            };
-            await store.addMessage(slug, repMsg);
+            });
           }
         }
+        await store.addMessages(slug, batch);
 
         const allMsgs = await store.getMessages(slug);
         const threaded = buildThreadedMessages(allMsgs);
@@ -524,4 +520,41 @@ function buildThreadedMessages(storedMsgs: StoredMessage[]): ThreadedMessage[] {
     createdAt: rm.createdAt,
     replies: repliesByParent.get(rm.id) || [],
   }));
+}
+
+async function buildSingleThread(
+  store: ReturnType<typeof getServerStore>,
+  slug: string,
+  targetId: string
+): Promise<ThreadedMessage | null> {
+  const root = await store.getMessageById(slug, targetId);
+  if (!root) return null;
+
+  const allMsgs = await store.getMessages(slug);
+  const replies: ReplyItem[] = [];
+  for (let i = 0; i < allMsgs.length; i++) {
+    const m = allMsgs[i];
+    if (m.parentId === targetId) {
+      replies.push({
+        id: m.id,
+        nickname: m.nickname,
+        content: m.content,
+        isHostReply: m.isHostReply,
+        createdAt: m.createdAt,
+      });
+    }
+  }
+
+  return {
+    id: root.id,
+    roomId: root.roomId,
+    nickname: root.nickname,
+    content: root.content,
+    isQuestion: root.isQuestion,
+    isHostReply: root.isHostReply,
+    status: root.status,
+    isRestored: root.isRestored,
+    createdAt: root.createdAt,
+    replies,
+  };
 }

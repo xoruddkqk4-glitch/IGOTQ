@@ -64,6 +64,8 @@ export default function HistoryPage() {
       if (!res.ok) throw new Error(data.error || '복원 실패');
 
       localStorage.setItem(`igotq:host:${data.room.slug}`, data.hostToken);
+      const hostNick = user?.displayName || (typeof window !== 'undefined' ? localStorage.getItem('igotq:last_nickname') : null) || '호스트';
+      localStorage.setItem(`igotq:nick:${data.room.slug}`, hostNick);
       router.push(`/${data.room.slug}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '알 수 없는 오류';

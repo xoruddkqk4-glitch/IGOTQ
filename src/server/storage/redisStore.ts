@@ -127,6 +127,26 @@ export class RedisStore implements VolatileStore {
       .exec();
   }
 
+  async addMessages(slug: string, messages: StoredMessage[]): Promise<void> {
+    if (!messages.length) return;
+    const room = await this.getRoom(slug);
+    const ttlSeconds =
+      room && room.isClosed && room.expiresAt
+        ? Math.max(1, Math.floor((new Date(room.expiresAt).getTime() - Date.now()) / 1000))
+        : 7 * 24 * 3600;
+    const msgsKey = `room:${slug}:msgs`;
+    const orderKey = `room:${slug}:order`;
+
+    const pipeline = this.client.multi();
+    for (const message of messages) {
+      pipeline.hset(msgsKey, message.id, JSON.stringify(message));
+      pipeline.rpush(orderKey, message.id);
+    }
+    pipeline.expire(msgsKey, ttlSeconds);
+    pipeline.expire(orderKey, ttlSeconds);
+    await pipeline.exec();
+  }
+
   async getMessages(slug: string): Promise<StoredMessage[]> {
     const order = await this.client.lrange(`room:${slug}:order`, 0, -1);
     if (!order.length) return [];

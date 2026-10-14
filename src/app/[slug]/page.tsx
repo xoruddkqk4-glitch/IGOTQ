@@ -42,6 +42,7 @@ export default function RoomPage() {
 
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
   const [sortOption, setSortOption] = useState<SortOption>('chronological');
+  const [showChangeNickModal, setShowChangeNickModal] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const [expiredMsg, setExpiredMsg] = useState<string | undefined>();
   const [socketError, setSocketError] = useState<string | null>(null);
@@ -108,9 +109,40 @@ export default function RoomPage() {
         setRoom(data.room);
         if (data.room?.notice) setNotice(data.room.notice);
 
-        // Check if nickname is remembered
-        const savedNick = sessionStorage.getItem(`igotq:nick:${slug}`);
-        if (savedNick) setNickname(savedNick);
+        // Check if nickname is remembered (localStorage first for persistence across tabs/browser crashes)
+        let savedNick: string | null = null;
+        if (typeof window !== 'undefined') {
+          savedNick = localStorage.getItem(`igotq:nick:${slug}`) || sessionStorage.getItem(`igotq:nick:${slug}`);
+        }
+
+        // Check for hostToken in localStorage or hash fragment
+        let hostToken: string | null = null;
+        if (typeof window !== 'undefined') {
+          hostToken = localStorage.getItem(`igotq:host:${slug}`);
+          if (window.location.hash.includes('host=')) {
+            const match = window.location.hash.match(/host=([a-zA-Z0-9]+)/);
+            if (match && match[1]) {
+              hostToken = match[1];
+              localStorage.setItem(`igotq:host:${slug}`, hostToken);
+            }
+          }
+        }
+
+        // If host, auto pass-through: if no room nick yet, use last used nick or default '호스트'
+        if (hostToken) {
+          if (!savedNick && typeof window !== 'undefined') {
+            savedNick = localStorage.getItem('igotq:last_nickname') || '호스트';
+            localStorage.setItem(`igotq:nick:${slug}`, savedNick);
+          }
+        }
+
+        if (savedNick) {
+          setNickname(savedNick);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(`igotq:nick:${slug}`, savedNick);
+            localStorage.setItem(`igotq:nick:${slug}`, savedNick);
+          }
+        }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : '알 수 없는 오류';
         setLoadError(msg);
@@ -201,7 +233,7 @@ export default function RoomPage() {
               m.nickname === payload.message.nickname
             )
         );
-        return [payload.message, ...filtered];
+        return [...filtered, payload.message];
       });
     });
 
@@ -277,7 +309,11 @@ export default function RoomPage() {
   // Handle actions with 0ms Optimistic Updates & Memoized Handlers
   const handleEnterNickname = useCallback((nick: string) => {
     setNickname(nick);
-    sessionStorage.setItem(`igotq:nick:${slug}`, nick);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`igotq:nick:${slug}`, nick);
+      localStorage.setItem(`igotq:nick:${slug}`, nick);
+      localStorage.setItem('igotq:last_nickname', nick);
+    }
   }, [slug]);
 
   const handleSendMessage = useCallback((content: string, isQuestion: boolean) => {
@@ -295,7 +331,7 @@ export default function RoomPage() {
       createdAt: new Date().toISOString(),
       replies: [],
     };
-    setMessages((prev) => [optimisticMsg, ...prev]);
+    setMessages((prev) => [...prev, optimisticMsg]);
 
     // 방금 작성한 글이 현재 활성화된 필터에 의해 가려지지 않도록 탭 자동 조정
     setFilterTab((current) => {
@@ -326,7 +362,11 @@ export default function RoomPage() {
     setMessages((prev) =>
       prev.map((m) =>
         m.id === parentId
-          ? { ...m, replies: [...(m.replies || []), optimisticReply] }
+          ? {
+              ...m,
+              status: 'answered',
+              replies: [...(m.replies || []), optimisticReply],
+            }
           : m
       )
     );
@@ -367,42 +407,58 @@ export default function RoomPage() {
     socket.emit('delete_room_immediately');
   }, []);
 
+  // Helper: 질문에 답변이 1개라도 달렸거나 status가 answered이면 답변 완료로 판별
+  const isQuestionAnswered = useCallback((m: ThreadedMessage) => {
+    return m.status === 'answered' || (m.isQuestion && (m.replies || []).length > 0);
+  }, []);
+
   // Filter and sort calculations
   const filteredMessages = useMemo(() => {
-    let list = [...messages];
+    let list: ThreadedMessage[];
 
     // Filter Tab (전체 | 의견 | 미답변 | 답변완료)
     if (filterTab === 'opinion') {
-      list = list.filter((m) => !m.isQuestion);
+      list = messages.filter((m) => !m.isQuestion);
     } else if (filterTab === 'pending') {
-      list = list.filter((m) => m.isQuestion && m.status === 'pending');
+      list = messages.filter((m) => m.isQuestion && !isQuestionAnswered(m));
     } else if (filterTab === 'answered') {
-      list = list.filter((m) => m.isQuestion && m.status === 'answered');
+      list = messages.filter((m) => m.isQuestion && isQuestionAnswered(m));
+    } else {
+      list = messages;
     }
 
-    // Sort (기본 'chronological': 백채널 뷰와 동일하게 시간순으로 최신글이 아래에 누적)
-    if (sortOption === 'chronological') {
-      list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    } else if (sortOption === 'reverse') {
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Sort (기본 'chronological': 이미 시간순으로 누적되어 있으므로 추가 sort 불필요)
+    if (sortOption === 'reverse') {
+      return [...list].reverse();
     } else if (sortOption === 'pendingFirst') {
-      list.sort((a, b) => {
-        if (a.status === 'pending' && b.status !== 'pending') return -1;
-        if (a.status !== 'pending' && b.status === 'pending') return 1;
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return [...list].sort((a, b) => {
+        const aAns = isQuestionAnswered(a);
+        const bAns = isQuestionAnswered(b);
+        if (!aAns && bAns) return -1;
+        if (aAns && !bAns) return 1;
+        return 0;
       });
     }
 
     return list;
-  }, [messages, filterTab, sortOption]);
+  }, [messages, filterTab, sortOption, isQuestionAnswered]);
 
   const counts = useMemo(() => {
-    const all = messages.length;
-    const opinion = messages.filter((m) => !m.isQuestion).length;
-    const pending = messages.filter((m) => m.isQuestion && m.status === 'pending').length;
-    const answered = messages.filter((m) => m.isQuestion && m.status === 'answered').length;
-    return { all, opinion, pending, answered };
-  }, [messages]);
+    let opinion = 0;
+    let pending = 0;
+    let answered = 0;
+    for (let i = 0; i < messages.length; i++) {
+      const m = messages[i];
+      if (!m.isQuestion) {
+        opinion++;
+      } else if (isQuestionAnswered(m)) {
+        answered++;
+      } else {
+        pending++;
+      }
+    }
+    return { all: messages.length, opinion, pending, answered };
+  }, [messages, isQuestionAnswered]);
 
   if (loading) {
     return (
@@ -493,7 +549,27 @@ export default function RoomPage() {
         {isExpired && <RoomExpiredOverlay message={expiredMsg} />}
 
         {/* Nickname Dialog if not entered yet */}
-        {!nickname && <NicknameGate roomTitle={room.title} onEnter={handleEnterNickname} />}
+        {!nickname && (
+          <NicknameGate
+            roomTitle={room.title}
+            initialNickname={typeof window !== 'undefined' ? localStorage.getItem('igotq:last_nickname') || '' : ''}
+            onEnter={handleEnterNickname}
+          />
+        )}
+
+        {/* Change Nickname Modal */}
+        {showChangeNickModal && (
+          <NicknameGate
+            roomTitle={room.title}
+            initialNickname={nickname || ''}
+            isEditMode={true}
+            onClose={() => setShowChangeNickModal(false)}
+            onEnter={(newNick) => {
+              handleEnterNickname(newNick);
+              setShowChangeNickModal(false);
+            }}
+          />
+        )}
 
         {/* Socket Error Toast */}
         {socketError && (
@@ -599,6 +675,7 @@ export default function RoomPage() {
               : undefined
           }
           nickname={nickname}
+          onChangeNickname={() => setShowChangeNickModal(true)}
         />
       </div>
 

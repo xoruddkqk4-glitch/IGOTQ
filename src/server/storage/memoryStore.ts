@@ -95,6 +95,22 @@ export class MemoryStore implements VolatileStore {
     order.push(message.id);
   }
 
+  async addMessages(slug: string, messages: StoredMessage[]): Promise<void> {
+    if (!messages.length) return;
+    let msgMap = this.messages.get(slug);
+    let order = this.messageOrder.get(slug);
+    if (!msgMap || !order) {
+      msgMap = new Map();
+      order = [];
+      this.messages.set(slug, msgMap);
+      this.messageOrder.set(slug, order);
+    }
+    for (const msg of messages) {
+      msgMap.set(msg.id, { ...msg });
+      order.push(msg.id);
+    }
+  }
+
   async getMessages(slug: string): Promise<StoredMessage[]> {
     const msgMap = this.messages.get(slug);
     const order = this.messageOrder.get(slug);

@@ -35,6 +35,7 @@ export interface ParseResult {
   success: boolean;
   messages?: ThreadedMessage[];
   roomTitle?: string;
+  slug?: string;
   error?: string;
 }
 
@@ -131,6 +132,7 @@ export function parseSessionJson(jsonStr: string, roomId: string): ParseResult {
       success: true,
       messages: normalized,
       roomTitle: roomInfo?.title,
+      slug: roomInfo?.slug,
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : '알 수 없는 오류';

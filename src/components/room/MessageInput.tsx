@@ -9,6 +9,7 @@ interface MessageInputProps {
   disabled?: boolean;
   disabledReason?: string;
   nickname?: string | null;
+  onChangeNickname?: () => void;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
@@ -16,6 +17,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   disabled,
   disabledReason,
   nickname,
+  onChangeNickname,
 }) => {
   const [content, setContent] = useState('');
   const [isQuestion, setIsQuestion] = useState(false);
@@ -74,11 +76,19 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           {/* Right: Nickname Pill & Char Count */}
           <div className="flex items-center gap-2 text-[#778899]">
             {nickname && (
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f0f2f5] text-[11px] font-medium text-[#445566]">
-                <User className="w-3 h-3" />
-                <span className="max-w-[100px] truncate">{nickname}</span>
+              <button
+                type="button"
+                onClick={onChangeNickname}
+                disabled={!onChangeNickname}
+                title={onChangeNickname ? '클릭하여 닉네임 변경' : undefined}
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f0f2f5] text-[11px] font-medium text-[#445566] transition-colors ${
+                  onChangeNickname ? 'hover:bg-[#e4e7eb] hover:text-[#111111] cursor-pointer' : ''
+                }`}
+              >
+                <User className="w-3 h-3 text-[#0066cc]" />
+                <span className="max-w-[80px] sm:max-w-[120px] truncate">{nickname}</span>
                 <span className="text-[#0066cc]">(나)</span>
-              </span>
+              </button>
             )}
 
             <span

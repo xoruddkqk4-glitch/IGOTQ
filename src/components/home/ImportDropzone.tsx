@@ -29,19 +29,27 @@ export const ImportDropzone: React.FC = () => {
         throw new Error(parsed.error || '유효하지 않은 IGOTQ 세션 파일입니다.');
       }
 
-      // Create new room with imported title
-      const title = parsed.roomTitle ? `${parsed.roomTitle} (복원됨)` : '복원된 세션';
+      // 백업 파일의 원래 제목과 주소(slug)를 그대로 유지
+      const title = parsed.roomTitle || '복원된 세션';
+      const targetSlug = parsed.slug ? parsed.slug.trim() : undefined;
+
       const res = await fetch('/api/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, ttlMinutes: 180 }),
+        body: JSON.stringify({
+          title,
+          slug: targetSlug,
+          ttlMinutes: 180,
+          overwrite: true, // 기존 주소의 방이 서버에 살아있더라도 덮어쓰기 복원!
+        }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '복원용 방 생성 실패');
+      if (!res.ok) throw new Error(data.error || '대화방 복원 실패');
 
       const { room, hostToken } = data;
       localStorage.setItem(`igotq:host:${room.slug}`, hostToken);
+      localStorage.setItem(`igotq:nick:${room.slug}`, '발표자(Host)');
 
       // Connect socket and import messages
       const socket = getClientSocket();

@@ -116,10 +116,8 @@ export const StreamFeedView: React.FC<StreamFeedViewProps> = ({
     }
   };
 
-  // Chronological order for live feed (earliest to latest from top to bottom)
-  const sortedMessages = [...messages].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  );
+  // Messages are already in chronological order (earliest to latest from top to bottom)
+  const sortedMessages = messages;
 
   return (
     <div className="fixed inset-0 z-[60] bg-[#BACEE0] flex flex-col font-sans text-[#1d1d1f] selection:bg-[#FEE500] selection:text-black overflow-y-auto">

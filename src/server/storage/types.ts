@@ -10,6 +10,7 @@ export interface VolatileStore {
   getExpiredRooms(nowIso: string): Promise<string[]>; // returns slugs
 
   addMessage(slug: string, message: StoredMessage): Promise<void>;
+  addMessages(slug: string, messages: StoredMessage[]): Promise<void>;
   getMessages(slug: string): Promise<StoredMessage[]>;
   getMessageById(slug: string, messageId: string): Promise<StoredMessage | null>;
   updateMessage(slug: string, messageId: string, updates: Partial<StoredMessage>): Promise<StoredMessage | null>;

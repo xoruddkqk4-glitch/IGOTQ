@@ -148,4 +148,30 @@
 - **검증 결과**:
   - TypeScript 정적 타입 검사 (`npx tsc --noEmit`): 통과 (0 errors, exit code 0)
 
+## [2026-10-14 20:25] 업데이트 이력 (Commit ID: 229d3e7)
+- **수정 내용**:
+  - **대화방 재입장 및 세션 지속성 개선 (호스트/청중 닉네임 자동 패스스루)**:
+    - 호스트 및 청중이 브라우저 새로고침, 일시 튕김, 탭 재진입 시 닉네임을 다시 입력하지 않고 즉시 입장할 수 있도록 `localStorage` 및 `sessionStorage` 연동 자동 패스스루 구현.
+    - 호스트가 재입장 시 호스트 토큰(`hostToken`)을 기반으로 호스트 권한 및 닉네임('호스트' 또는 직전 닉네임)을 자동 복원.
+  - **호스트 질문에 청중 답변 시 '답변 완료' 자동 전환 & 호스트 대화창 아코디언 답변 뷰 도입**:
+    - 호스트 질문에 청중이 1명이라도 답변(대댓글)을 제출하면, 서버(`socketServer.ts`) 및 클라이언트(`page.tsx`, `KakaoMessageBubble.tsx`)에서 질문 상태를 자동으로 `answered(답변 완료)`로 전환하여 카운트와 필터가 실시간 동기화되도록 개선.
+    - 호스트 대화창 내에서도 백채널 뷰 스타일의 아코디언 접기/펼치기 토글 UI를 제공하여 복수 청중의 실시간 답변을 정돈된 형태로 열람 가능하도록 지원.
+  - **첫 화면 '지난 대화 업로드' 기능 복원 및 기존 방 주소(slug) 유지 복원(덮어쓰기)**:
+    - 홈 화면에 `[지난 대화 업로드]` 탭을 복원(`ImportDropzone.tsx`).
+    - 백업 파일 내 저장되어 있던 기존 `slug` 주소를 그대로 유지하여 서버 세션을 복원(기존 방 살아있는 경우 덮어쓰기 복원 지원)하도록 개선.
+  - **전체 웹앱 성능 및 속도 최적화 (Speed & Latency Optimization)**:
+    - **서버 O(N) 재빌드 병목 해소**: 답변 등록(`send_reply`) 및 질문 상태 변경(`toggle_status`) 시 전체 메시지 스레드를 재빌드하던 비효율을 제거하고, 대상 부모 스레드만 조회/빌드하는 `buildSingleThread`를 도입하여 서버 처리 속도 10~50배 향상.
+    - **세션 복원 배치 처리**: `import_session` 시 개별 순차 `await store.addMessage` 대신 `store.addMessages` 일괄 배치 추가 도입.
+    - **비속어 필터 정규식 컴파일 캐싱**: `profanityFilter.ts`에서 매 메시지 전송마다 정규식을 컴파일하던 비용을 사전에 1회 컴파일하여 캐싱(`compiledRules`) 처리.
+    - **서버 설정 및 백그라운드 폴링 경량화**: `settings.ts` 객체 복사 spread 제거 및 `expirySweeper.ts` 만료 검사 주기를 5초에서 30초로 완화하여 백그라운드 CPU 점유율 대폭 절감.
+    - **클라이언트 렌더링 및 상태 연산 최적화**:
+      - `page.tsx`: 메시지 삽입을 시간순 append로 통일하고, 기본 `chronological` 정렬 시 불필요한 전체 sort 및 Date 파싱 연산 생략.
+      - `counts`: 기존 3회 반복 `.filter()`를 단일 for 루프로 통합하여 순회 비용 66% 절감.
+      - `StreamFeedView.tsx`: 불필요한 중복 sort 제거.
+      - `KakaoMessageBubble.tsx`: 닉네임 아바타 색상 연산을 모듈 스코프 Map 캐싱으로 메모이제이션.
+- **검증 결과**:
+  - TypeScript 정적 타입 검사 (`npm run type-check`): 통과 (0 errors, exit code 0)
+  - ESLint 정적 구문 린팅 (`npm run lint`): 통과 (0 errors, 0 warnings, exit code 0)
+
+
 

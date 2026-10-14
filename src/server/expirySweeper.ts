@@ -34,7 +34,7 @@ export function startExpirySweeper(): void {
     } catch (err) {
       console.error('Expiry sweeper error:', err);
     }
-  }, 5000);
+  }, 30000);
 }
 
 export function stopExpirySweeper(): void {

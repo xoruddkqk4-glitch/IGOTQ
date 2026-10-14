@@ -35,9 +35,10 @@ export async function POST(req: NextRequest) {
       const isExpired = existing.expiresAt && new Date(existing.expiresAt).getTime() <= nowTime;
       const isAbandoned =
         !existing.isClosed && nowTime - new Date(existing.createdAt).getTime() > 24 * 60 * 60 * 1000;
+      const canOverwrite = isExpired || isAbandoned || Boolean(body.overwrite);
 
-      if (isExpired || isAbandoned) {
-        // Expired room is cleaned up and slug is immediately reused
+      if (canOverwrite) {
+        // Expired room or explicit overwrite by host: cleanup existing room and recreate with same slug
         await store.deleteRoom(rawSlug);
         if (existing.isCloudPersisted) {
           await firestoreRepo.deleteRoom(existing.id).catch(() => {});

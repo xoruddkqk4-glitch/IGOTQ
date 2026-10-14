@@ -60,8 +60,10 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
         throw new Error(data.error || '방 생성에 실패했습니다.');
       }
 
-      // Store host token in localStorage
+      // Store host token and nickname in localStorage for instant pass-through
       localStorage.setItem(`igotq:host:${data.room.slug}`, data.hostToken);
+      const hostNick = user?.displayName || (typeof window !== 'undefined' ? localStorage.getItem('igotq:last_nickname') : null) || '호스트';
+      localStorage.setItem(`igotq:nick:${data.room.slug}`, hostNick);
 
       if (onSuccess) {
         onSuccess(data.room.slug, data.hostToken);
