@@ -218,7 +218,7 @@ export const KakaoNoticeBar: React.FC<KakaoNoticeBarProps> = ({
                 • 질문은 <strong>[Q&A 질문]</strong> 모드로 작성하시면 발표자가 실시간으로 확인하고 공식 답변을 등록합니다.
               </p>
               <p>
-                • 일반 세미나 의견이나 리액션은 <strong>[일반 의견]</strong> 모드로 소통하실 수 있습니다.
+                • 일반 의견이나 리액션은 <strong>[일반 의견]</strong> 모드로 소통하실 수 있습니다.
               </p>
               <p className="font-mono text-[#0066cc]">
                 • 접속 링크: igotq.com/{slug}

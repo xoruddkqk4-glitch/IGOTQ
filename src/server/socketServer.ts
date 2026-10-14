@@ -13,6 +13,7 @@ interface SocketData {
   nickname?: string;
   isHost?: boolean;
   userUid?: string;
+  isDisplayOnly?: boolean;
 }
 
 export function setupSocketServer(io: SocketIOServer) {
@@ -21,7 +22,7 @@ export function setupSocketServer(io: SocketIOServer) {
     const data: SocketData = {};
 
     // 1. Join room
-    socket.on('join_room', async (payload: { slug: string; nickname: string; hostToken?: string; idToken?: string }) => {
+    socket.on('join_room', async (payload: { slug: string; nickname: string; hostToken?: string; idToken?: string; isDisplayOnly?: boolean }) => {
       try {
         const { slug, nickname, hostToken, idToken } = payload;
         if (!slug || !nickname) {
@@ -57,10 +58,22 @@ export function setupSocketServer(io: SocketIOServer) {
         }
 
         data.isHost = isHost;
+
+        // 백채널 뷰 / 전광판 뷰는 참여자 카운트에서 제외
+        const isDisplayOnly = Boolean(
+          payload.isDisplayOnly ||
+          payload.nickname === '전광판화면' ||
+          payload.nickname === '백채널화면'
+        );
+        data.isDisplayOnly = isDisplayOnly;
+
         socket.join(`room:${slug}`);
 
-        const participantCount = await store.addParticipant(slug, socket.id);
-        io.to(`room:${slug}`).emit('participants_updated', { count: participantCount });
+        let participantCount = await store.getParticipantCount(slug);
+        if (!isDisplayOnly) {
+          participantCount = await store.addParticipant(slug, socket.id);
+          io.to(`room:${slug}`).emit('participants_updated', { count: participantCount });
+        }
 
         // Build threaded messages
         const storedMsgs = await store.getMessages(slug);
@@ -458,13 +471,39 @@ export function setupSocketServer(io: SocketIOServer) {
       }
     });
 
+    // Switch between display mode and chat participant mode
+    socket.on('set_display_mode', async (payload: { isDisplayOnly: boolean }) => {
+      try {
+        const slug = data.slug;
+        if (!slug) return;
+        const store = getServerStore();
+        const targetDisplay = Boolean(payload.isDisplayOnly);
+
+        if (data.isDisplayOnly && !targetDisplay) {
+          // Transitioned from display to participant
+          data.isDisplayOnly = false;
+          const count = await store.addParticipant(slug, socket.id);
+          io.to(`room:${slug}`).emit('participants_updated', { count });
+        } else if (!data.isDisplayOnly && targetDisplay) {
+          // Transitioned from participant to display
+          data.isDisplayOnly = true;
+          const count = await store.removeParticipant(slug, socket.id);
+          io.to(`room:${slug}`).emit('participants_updated', { count });
+        }
+      } catch (err) {
+        console.error('set_display_mode error:', err);
+      }
+    });
+
     // Disconnect
     socket.on('disconnect', async () => {
       cleanupSocketRateLimit(socket.id);
       if (data.slug) {
         const store = getServerStore();
-        const count = await store.removeParticipant(data.slug, socket.id);
-        io.to(`room:${data.slug}`).emit('participants_updated', { count });
+        if (!data.isDisplayOnly) {
+          const count = await store.removeParticipant(data.slug, socket.id);
+          io.to(`room:${data.slug}`).emit('participants_updated', { count });
+        }
       }
     });
   });

@@ -173,5 +173,20 @@
   - TypeScript 정적 타입 검사 (`npm run type-check`): 통과 (0 errors, exit code 0)
   - ESLint 정적 구문 린팅 (`npm run lint`): 통과 (0 errors, 0 warnings, exit code 0)
 
+## [2026-10-14 21:40] 업데이트 이력 (Commit ID: b5d2a19)
+- **수정 내용**:
+  - **입력창 플레이스홀더 문구 범용화 ('세미나에 대한' 제거)**:
+    - `MessageInput.tsx`: 다양한 사용 환경(수업, 워크숍, 컨퍼런스, 회의 등)에 범용적으로 어울리도록 플레이스홀더를 `'세미나에 대한 자유로운 의견이나 반응...'`에서 `'자유로운 의견이나 반응을 남겨보세요...'`로 수정.
+    - `KakaoNoticeBar.tsx`: 상단 공지 바의 `일반 세미나 의견` 문구를 `일반 의견`으로 통일.
+  - **참여자 수 집계에서 '백채널 뷰 / 전광판 뷰' 인원 제외 (`isDisplayOnly`)**:
+    - `socketServer.ts`: 소켓 접속 시 `isDisplayOnly` 플래그 및 `전광판화면`/`백채널화면` 닉네임을 감지하여, 프로젝터 화면 및 백채널 뷰가 대화방 접속자 수(`participantCount`)를 불필요하게 증가시키지 않도록 분리.
+    - 뷰 화면 탭 종료 시에도 일반 참여자 수가 감소하지 않도록 안전 예외 처리.
+    - 뷰 모드에서 대화창으로 복귀 시 실시간 참여자 상태를 재동기화하는 `set_display_mode` 소켓 이벤트 구현.
+    - `page.tsx`: URL 파라미터(`?view=stream`, `?view=projector`) 진입 시 `isDisplayOnly: true`를 소켓에 전달하고, 대화창 복귀 시 참여자 모드로 전환.
+- **검증 결과**:
+  - TypeScript 정적 타입 검사 (`npm run type-check`): 통과 (0 errors, exit code 0)
+  - ESLint 정적 구문 린팅 (`npm run lint`): 통과 (0 errors, 0 warnings, exit code 0)
+
+
 
 

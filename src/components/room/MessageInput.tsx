@@ -113,7 +113,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 ? disabledReason
                 : isQuestion
                 ? '발표자에게 궁금한 질문을 남겨보세요... (Enter 전송, Shift+Enter 줄바꿈)'
-                : '세미나에 대한 자유로운 의견이나 반응을 남겨보세요...'
+                : '자유로운 의견이나 반응을 남겨보세요...'
             }
             maxLength={MAX_MESSAGE_LENGTH}
             rows={2}

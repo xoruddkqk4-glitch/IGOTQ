@@ -30,12 +30,27 @@ export default function RoomPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [nickname, setNickname] = useState<string | null>(null);
+  const [nickname, setNickname] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const v = new URLSearchParams(window.location.search).get('view');
+      if (v === 'projector' || v === 'stream' || v === 'feed') {
+        return '전광판화면';
+      }
+    }
+    return null;
+  });
   const [isHost, setIsHost] = useState(false);
   const [participantCount, setParticipantCount] = useState(1);
   const [messages, setMessages] = useState<ThreadedMessage[]>([]);
 
-  const [viewMode, setViewMode] = useState<'chat' | 'projector' | 'stream'>('chat');
+  const [viewMode, setViewMode] = useState<'chat' | 'projector' | 'stream'>(() => {
+    if (typeof window !== 'undefined') {
+      const v = new URLSearchParams(window.location.search).get('view');
+      if (v === 'projector') return 'projector';
+      if (v === 'stream' || v === 'feed') return 'stream';
+    }
+    return 'chat';
+  });
   const [notice, setNotice] = useState<string | null>(null);
   const [noticeAttachment, setNoticeAttachment] = useState<NoticeAttachment | null>(null);
   const [showEditNotice, setShowEditNotice] = useState(false);
@@ -170,13 +185,15 @@ export default function RoomPage() {
         }
       }
 
-      // Join room
+      // Join room (백채널 뷰 / 전광판 뷰는 참여자 카운트에서 제외하도록 isDisplayOnly 전달)
+      const isDisplayOnly = viewMode === 'stream' || viewMode === 'projector' || nickname === '전광판화면' || nickname === '백채널화면';
       getIdToken().then((idToken) => {
         socket.emit('join_room', {
           slug,
           nickname,
           hostToken: hostToken || undefined,
           idToken,
+          isDisplayOnly,
         });
       });
     };
@@ -288,7 +305,7 @@ export default function RoomPage() {
       socket.off('room_expired');
       socket.off('error');
     };
-  }, [room, nickname, slug, getIdToken, setRoomHeaderData]);
+  }, [room, nickname, slug, getIdToken, setRoomHeaderData, viewMode]);
 
   const handleSaveNotice = useCallback((newNotice: string, newAttachment?: NoticeAttachment | null) => {
     setNotice(newNotice || null);
@@ -498,7 +515,11 @@ export default function RoomPage() {
         attachment={noticeAttachment}
         isHost={isHost}
         participantCount={participantCount}
-        onExitProjector={() => setViewMode('chat')}
+        onExitProjector={() => {
+          setViewMode('chat');
+          const socket = getClientSocket();
+          socket.emit('set_display_mode', { isDisplayOnly: false });
+        }}
         onToggleStatus={handleToggleStatus}
         onDeleteMessage={handleDeleteMessage}
       />
@@ -513,7 +534,11 @@ export default function RoomPage() {
         notice={notice}
         attachment={noticeAttachment}
         participantCount={participantCount}
-        onExit={() => setViewMode('chat')}
+        onExit={() => {
+          setViewMode('chat');
+          const socket = getClientSocket();
+          socket.emit('set_display_mode', { isDisplayOnly: false });
+        }}
       />
     );
   }
