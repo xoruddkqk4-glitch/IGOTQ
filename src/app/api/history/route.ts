@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyFirebaseIdToken } from '@/server/authz';
 import { firestoreRepo } from '@/server/storage/firestoreRepo';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
