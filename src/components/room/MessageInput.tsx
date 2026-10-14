@@ -29,45 +29,48 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   };
 
   return (
-    <div className="sticky bottom-0 z-30 pt-2 pb-4 glass-panel border-t border-white/10 px-4 -mx-4 sm:mx-0 sm:rounded-2xl sm:mb-4 shadow-2xl">
-      <form onSubmit={handleSubmit} className="space-y-2 max-w-4xl mx-auto">
+    <div className="sticky bottom-0 z-30 pt-3 pb-5 bg-white/90 backdrop-blur-xl border-t border-black/[0.08] px-4 -mx-4 sm:mx-0 sm:rounded-[20px] sm:mb-5 shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
+      <form onSubmit={handleSubmit} className="space-y-2.5 max-w-4xl mx-auto">
         <div className="flex items-center justify-between px-1">
           {/* Question / Message toggle */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 p-0.5 bg-[#e8e8ed] rounded-full">
             <button
               type="button"
-              onClick={() => setIsQuestion(!isQuestion)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+              onClick={() => setIsQuestion(true)}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] transition-all ${
                 isQuestion
-                  ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-300 shadow-sm'
-                  : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200'
+                  ? 'bg-white text-[#1d1d1f] font-normal shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
-              {isQuestion ? (
-                <>
-                  <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>질문(Q&A)으로 등록</span>
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-                  <span>일반 의견으로 등록</span>
-                </>
-              )}
+              <HelpCircle className="w-3.5 h-3.5 text-[#0066cc]" />
+              <span>질문 (Q&A)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsQuestion(false)}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] transition-all ${
+                !isQuestion
+                  ? 'bg-white text-[#1d1d1f] font-normal shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-[#86868b]" />
+              <span>일반 의견</span>
             </button>
           </div>
 
           {/* Char counter */}
           <span
-            className={`text-[11px] font-mono ${
-              content.length > MAX_MESSAGE_LENGTH ? 'text-red-400 font-bold' : 'text-slate-500'
+            className={`text-[12px] font-mono ${
+              content.length > MAX_MESSAGE_LENGTH ? 'text-[#ff3b30] font-semibold' : 'text-[#86868b]'
             }`}
           >
             {content.length} / {MAX_MESSAGE_LENGTH}
           </span>
         </div>
 
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-2.5">
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -80,13 +83,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
             }
             maxLength={MAX_MESSAGE_LENGTH}
             rows={2}
-            className="flex-1 p-3 rounded-xl glass-input text-sm text-white placeholder-slate-500 resize-none"
+            className="flex-1 p-3.5 rounded-[14px] bg-[#f5f5f7] border border-black/[0.1] text-[15px] sm:text-[17px] text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0071e3] focus:border-transparent outline-none resize-none transition-all"
           />
 
           <button
             type="submit"
             disabled={!content.trim() || disabled || content.length > MAX_MESSAGE_LENGTH}
-            className="h-[58px] px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:pointer-events-none"
+            className="h-[56px] px-6 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white font-normal text-[15px] sm:text-[17px] flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
           >
             <Send className="w-4 h-4" />
             <span className="hidden sm:inline">전송</span>

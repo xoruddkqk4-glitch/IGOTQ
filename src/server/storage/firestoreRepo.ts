@@ -76,26 +76,33 @@ export class FirestoreRepo {
   }
 
   async getUserRooms(hostUid: string): Promise<RoomInfo[]> {
-    const snapshot = await this.db()
-      .collection('rooms')
-      .where('hostUid', '==', hostUid)
-      .orderBy('createdAt', 'desc')
-      .get();
+    try {
+      const snapshot = await this.db()
+        .collection('rooms')
+        .where('hostUid', '==', hostUid)
+        .get();
 
-    const rooms: RoomInfo[] = [];
-    snapshot.forEach((doc) => {
-      const d = doc.data();
-      rooms.push({
-        id: d.id,
-        slug: d.slug,
-        title: d.title,
-        hostUid: d.hostUid,
-        isCloudPersisted: true,
-        expiresAt: d.expiresAt,
-        createdAt: d.createdAt,
+      const rooms: RoomInfo[] = [];
+      snapshot.forEach((doc) => {
+        const d = doc.data();
+        rooms.push({
+          id: d.id,
+          slug: d.slug,
+          title: d.title,
+          hostUid: d.hostUid,
+          isCloudPersisted: true,
+          expiresAt: d.expiresAt,
+          createdAt: d.createdAt,
+        });
       });
-    });
-    return rooms;
+
+      // Sort in-memory to prevent requiring Firestore composite index
+      rooms.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return rooms;
+    } catch (err) {
+      console.error('Failed to get user rooms from firestore:', err);
+      return [];
+    }
   }
 
   async deleteRoom(roomId: string): Promise<void> {

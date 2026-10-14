@@ -18,7 +18,7 @@ interface QAFilterBarProps {
   };
 }
 
-export const QAFilterBar: React.FC<QAFilterBarProps> = ({
+export const QAFilterBar = React.memo<QAFilterBarProps>(({
   currentTab,
   onTabChange,
   currentSort,
@@ -26,68 +26,64 @@ export const QAFilterBar: React.FC<QAFilterBarProps> = ({
   counts,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-white/10 mb-4">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-black/[0.08] mb-5">
       {/* Filter Tabs */}
-      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/5 border border-white/10">
+      <div className="flex items-center gap-1 p-1 bg-[#e8e8ed] rounded-full self-start">
         <button
           onClick={() => onTabChange('all')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] transition-all ${
             currentTab === 'all'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-white text-[#1d1d1f] font-normal shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+              : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
           }`}
         >
           <ListFilter className="w-3.5 h-3.5" />
           <span>전체</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/10">{counts.all}</span>
+          <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-black/[0.06] font-normal">{counts.all}</span>
         </button>
 
         <button
           onClick={() => onTabChange('pending')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] transition-all ${
             currentTab === 'pending'
-              ? 'bg-amber-500 text-slate-950 font-bold shadow-sm shadow-amber-500/30'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-white text-[#1d1d1f] font-normal shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+              : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
           }`}
         >
-          <HelpCircle className="w-3.5 h-3.5" />
-          <span>미답변 질문</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20">{counts.pending}</span>
+          <HelpCircle className="w-3.5 h-3.5 text-[#ff9500]" />
+          <span>미답변</span>
+          <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-black/[0.06] font-normal">{counts.pending}</span>
         </button>
 
         <button
           onClick={() => onTabChange('answered')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] transition-all ${
             currentTab === 'answered'
-              ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-white text-[#1d1d1f] font-normal shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+              : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
           }`}
         >
-          <CheckCircle2 className="w-3.5 h-3.5" />
+          <CheckCircle2 className="w-3.5 h-3.5 text-[#34c759]" />
           <span>답변 완료</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/10">{counts.answered}</span>
+          <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-black/[0.06] font-normal">{counts.answered}</span>
         </button>
       </div>
 
       {/* Sort selector */}
-      <div className="flex items-center gap-1.5 self-end sm:self-auto">
-        <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+      <div className="flex items-center gap-2 self-end sm:self-auto">
+        <ArrowUpDown className="w-3.5 h-3.5 text-[#86868b]" />
         <select
           value={currentSort}
           onChange={(e) => onSortChange(e.target.value as SortOption)}
-          className="bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs font-medium text-slate-300 focus:outline-none focus:border-indigo-500"
+          className="bg-white border border-black/[0.1] rounded-full px-3.5 py-1.5 text-[13px] font-normal text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
         >
-          <option value="latest" className="bg-slate-900 text-white">
-            최신순 정렬
-          </option>
-          <option value="oldest" className="bg-slate-900 text-white">
-            오래된순 정렬
-          </option>
-          <option value="pendingFirst" className="bg-slate-900 text-white">
-            미답변 질문 우선
-          </option>
+          <option value="latest">최신순 정렬</option>
+          <option value="oldest">오래된순 정렬</option>
+          <option value="pendingFirst">미답변 질문 우선</option>
         </select>
       </div>
     </div>
   );
-};
+});
+
+QAFilterBar.displayName = 'QAFilterBar';

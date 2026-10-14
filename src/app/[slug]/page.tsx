@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getClientSocket } from '@/lib/socket';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,7 +12,7 @@ import { QuestionCard } from '@/components/room/QuestionCard';
 import { MessageInput } from '@/components/room/MessageInput';
 import { RoomExpiredOverlay } from '@/components/room/RoomExpiredOverlay';
 import { RoomInfo } from '@/types/room';
-import { ThreadedMessage } from '@/types/message';
+import { ThreadedMessage, ReplyItem } from '@/types/message';
 import { MessageSquareDashed, AlertCircle } from 'lucide-react';
 
 export default function RoomPage() {
@@ -64,27 +64,35 @@ export default function RoomPage() {
     if (!room || !nickname) return;
 
     const socket = getClientSocket();
-    if (!socket.connected) socket.connect();
 
-    // Check for hostToken in localStorage or hash fragment
-    let hostToken = localStorage.getItem(`igotq:host:${slug}`);
-    if (typeof window !== 'undefined' && window.location.hash.includes('host=')) {
-      const match = window.location.hash.match(/host=([a-zA-Z0-9]+)/);
-      if (match && match[1]) {
-        hostToken = match[1];
-        localStorage.setItem(`igotq:host:${slug}`, hostToken);
+    const joinRoom = () => {
+      // Check for hostToken in localStorage or hash fragment
+      let hostToken = localStorage.getItem(`igotq:host:${slug}`);
+      if (typeof window !== 'undefined' && window.location.hash.includes('host=')) {
+        const match = window.location.hash.match(/host=([a-zA-Z0-9]+)/);
+        if (match && match[1]) {
+          hostToken = match[1];
+          localStorage.setItem(`igotq:host:${slug}`, hostToken);
+        }
       }
-    }
 
-    // Join room
-    getIdToken().then((idToken) => {
-      socket.emit('join_room', {
-        slug,
-        nickname,
-        hostToken: hostToken || undefined,
-        idToken,
+      // Join room
+      getIdToken().then((idToken) => {
+        socket.emit('join_room', {
+          slug,
+          nickname,
+          hostToken: hostToken || undefined,
+          idToken,
+        });
       });
-    });
+    };
+
+    socket.on('connect', joinRoom);
+    if (socket.connected) {
+      joinRoom();
+    } else {
+      socket.connect();
+    }
 
     socket.on('room_state', (payload) => {
       setIsHost(payload.isHost);
@@ -102,7 +110,16 @@ export default function RoomPage() {
     socket.on('message_created', (payload) => {
       setMessages((prev) => {
         if (prev.some((m) => m.id === payload.message.id)) return prev;
-        return [payload.message, ...prev];
+        // Reconcile optimistic placeholder
+        const filtered = prev.filter(
+          (m) =>
+            !(
+              m.id.startsWith('optimistic-') &&
+              m.content === payload.message.content &&
+              m.nickname === payload.message.nickname
+            )
+        );
+        return [payload.message, ...filtered];
       });
     });
 
@@ -131,6 +148,7 @@ export default function RoomPage() {
     });
 
     return () => {
+      socket.off('connect', joinRoom);
       socket.off('room_state');
       socket.off('participants_updated');
       socket.off('message_created');
@@ -142,41 +160,82 @@ export default function RoomPage() {
     };
   }, [room, nickname, slug, getIdToken]);
 
-  // Handle actions
-  const handleEnterNickname = (nick: string) => {
+  // Handle actions with 0ms Optimistic Updates & Memoized Handlers
+  const handleEnterNickname = useCallback((nick: string) => {
     setNickname(nick);
     sessionStorage.setItem(`igotq:nick:${slug}`, nick);
-  };
+  }, [slug]);
 
-  const handleSendMessage = (content: string, isQuestion: boolean) => {
+  const handleSendMessage = useCallback((content: string, isQuestion: boolean) => {
+    // 0ms Optimistic local rendering
+    const tempId = `optimistic-${Date.now()}`;
+    const optimisticMsg: ThreadedMessage = {
+      id: tempId,
+      roomId: room?.id || slug,
+      content,
+      nickname: nickname || '익명',
+      isQuestion,
+      isHostReply: false,
+      status: 'pending',
+      isRestored: false,
+      createdAt: new Date().toISOString(),
+      replies: [],
+    };
+    setMessages((prev) => [optimisticMsg, ...prev]);
+
     const socket = getClientSocket();
-    socket.emit('send_message', { content, isQuestion });
-  };
+    socket.emit('send_message', { content, isQuestion, slug, nickname });
+  }, [room?.id, slug, nickname]);
 
-  const handleSendReply = (parentId: string, content: string) => {
+  const handleSendReply = useCallback((parentId: string, content: string) => {
+    // 0ms Optimistic reply insertion
+    const tempReplyId = `optimistic-reply-${Date.now()}`;
+    const optimisticReply: ReplyItem = {
+      id: tempReplyId,
+      content,
+      nickname: nickname || (isHost ? '진행자' : '참여자'),
+      isHostReply: isHost,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === parentId
+          ? { ...m, replies: [...(m.replies || []), optimisticReply] }
+          : m
+      )
+    );
+
     const socket = getClientSocket();
     socket.emit('send_reply', { parentId, content });
-  };
+  }, [nickname, isHost]);
 
-  const handleToggleStatus = (messageId: string, status: 'pending' | 'answered') => {
+  const handleToggleStatus = useCallback((messageId: string, status: 'pending' | 'answered') => {
+    // 0ms Optimistic status change
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, status } : m))
+    );
     const socket = getClientSocket();
     socket.emit('toggle_status', { messageId, status });
-  };
+  }, []);
 
-  const handleDeleteMessage = (messageId: string) => {
+  const handleDeleteMessage = useCallback((messageId: string) => {
+    // 0ms Optimistic deletion
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
     const socket = getClientSocket();
     socket.emit('delete_message', { messageId });
-  };
+  }, []);
 
-  const handleImportMessages = (importedMsgs: ThreadedMessage[]) => {
+  const handleImportMessages = useCallback((importedMsgs: ThreadedMessage[]) => {
+    setMessages(importedMsgs);
     const socket = getClientSocket();
     socket.emit('import_session', { messages: importedMsgs });
-  };
+  }, []);
 
-  const handleCloseRoom = () => {
+  const handleCloseRoom = useCallback(() => {
     const socket = getClientSocket();
     socket.emit('close_room');
-  };
+  }, []);
 
   // Filter and sort calculations
   const filteredMessages = useMemo(() => {
@@ -215,25 +274,25 @@ export default function RoomPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-3">
-        <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
-        <p className="text-xs text-slate-400">세션 로딩 중...</p>
+        <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin"></div>
+        <p className="text-[13px] text-[#86868b]">세션 로딩 중...</p>
       </div>
     );
   }
 
   if (loadError || !room) {
     return (
-      <div className="max-w-md mx-auto my-12 glass-panel p-8 rounded-3xl text-center space-y-4 border border-red-500/20">
-        <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-400 flex items-center justify-center mx-auto">
+      <div className="max-w-md mx-auto my-12 apple-card p-8 sm:p-10 rounded-[22px] text-center space-y-4 border border-black/[0.08] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+        <div className="w-12 h-12 rounded-full bg-[#ff3b30]/10 text-[#d70015] flex items-center justify-center mx-auto">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-white">방을 찾을 수 없습니다</h2>
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <h2 className="text-xl font-semibold text-[#1d1d1f]">방을 찾을 수 없습니다</h2>
+        <p className="text-[14px] text-[#86868b] leading-relaxed">
           {loadError || '존재하지 않거나 유효 시간이 만료되어 파기된 방입니다.'}
         </p>
         <a
           href="/"
-          className="inline-block px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors"
+          className="inline-block px-6 py-2.5 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white font-normal text-[15px] transition-all active:scale-[0.97]"
         >
           홈으로 돌아가기
         </a>
@@ -251,8 +310,8 @@ export default function RoomPage() {
 
       {/* Socket Error Toast */}
       {socketError && (
-        <div className="fixed top-16 right-4 z-50 p-3 rounded-xl bg-red-600 text-white text-xs font-semibold shadow-xl flex items-center gap-2 animate-fade-in">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="fixed top-14 right-4 z-50 px-4 py-2.5 rounded-full bg-[#1d1d1f] text-white text-[13px] font-normal shadow-xl flex items-center gap-2 animate-fade-in">
+          <AlertCircle className="w-4 h-4 text-[#ff3b30] flex-shrink-0" />
           <span>{socketError}</span>
         </div>
       )}
@@ -280,18 +339,18 @@ export default function RoomPage() {
       />
 
       {/* Messages List */}
-      <div className="space-y-3 min-h-[300px]">
+      <div className="space-y-3.5 min-h-[300px]">
         {filteredMessages.length === 0 ? (
-          <div className="py-16 text-center space-y-2 glass-panel rounded-2xl border border-white/5">
-            <MessageSquareDashed className="w-8 h-8 text-slate-600 mx-auto" />
-            <p className="text-sm font-semibold text-slate-400">
+          <div className="py-20 text-center space-y-2 apple-card rounded-[18px] border border-black/[0.06] bg-white">
+            <MessageSquareDashed className="w-8 h-8 text-[#86868b] mx-auto" />
+            <p className="text-[15px] font-semibold text-[#1d1d1f]">
               {filterTab === 'pending'
                 ? '미답변 질문이 없습니다.'
                 : filterTab === 'answered'
                 ? '답변 완료된 질문이 없습니다.'
                 : '아직 등록된 질문이나 의견이 없습니다.'}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-[13px] text-[#86868b]">
               첫 번째 질문을 남겨 세미나의 소통을 시작해 보세요!
             </p>
           </div>

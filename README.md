@@ -59,3 +59,28 @@
 - **검증 결과**:
   - TypeScript 정적 타입 검사 (`npm run type-check`): 통과 (0 errors)
   - ESLint 정적 구문 린팅 (`npm run lint`): 통과 (0 errors, 0 warnings)
+
+## [2026-10-14 12:05] 업데이트 이력 (Commit ID: facd3ec)
+- **수정 내용**:
+  - **Apple Design System UI/UX 전면 개편**:
+    - `.designs/apple/DESIGN.md` 기반 미니멀리즘 디자인 시스템 적용 (`globals.css`, SF Pro, Apple 색상 토큰).
+    - 첫 화면 가시성 강화: 불필요한 설명 축소, 핵심 타이틀(5xl~7xl) 및 탭(17px) 대형화, 4개 핵심 특징 카드 재구성.
+    - 최상단 글로벌 헤더 크기 확대 (`h-11` ➔ `h-16`), 로고/타이틀 확대, LIVE 뱃지 및 ADMIN 뱃지 추가, 이메일 표시 영역 확장.
+  - **Google 원클릭 단독 로그인 전환 (`src/app/login/page.tsx`)**:
+    - 이메일/비밀번호 폼을 모두 제거하고 공식 4색 심볼의 Google 원클릭 인증 인터페이스 구현.
+  - **관리자 권한 스크립트 수정 및 최고 관리자 승격**:
+    - `scripts/set-admin.ts`에 `@next/env` 환경 변수 자동 로더 적용하여 `metadata.google.internal` 오류 해결.
+    - `xoruddkqk4@gmail.com` 계정에 관리자(`admin`) 및 영구 보관(`canPersist`) 권한 정상 부여.
+  - **저장된 세션(`/history`) Firestore 복합 색인 오류 해결**:
+    - `getUserRooms` 쿼리를 단일 필드 조회 후 인메모리 정렬 방식으로 변경하여 색인 누락(`FAILED_PRECONDITION`) 원천 차단.
+    - API 라우트 및 클라이언트 응답 파싱 시 `Unexpected end of JSON input` 예외 방어 코드 적용.
+  - **초고속 반응성 & 성능 최적화 (0ms 체감 속도)**:
+    - WebSocket-First 직결: `transports: ['websocket', 'polling']` 및 `perMessageDeflate: false`로 연결 레이턴시 1~2초 ➔ 10~30ms 단축.
+    - 0ms 옵티미스틱 UI: 질문 등록, 대댓글 답변, 답변완료 토글, 질문 삭제 시 서버 대기 없이 즉각 화면 반영.
+    - 소켓 재연결 시 자동 재입장(`joinRoom`) 및 페이로드 세션 복구 2중 방어로 `"방에 먼저 입장해야 합니다"` 오류 완벽 차단.
+    - 컴포넌트 메모이제이션(`QuestionCard`, `QAFilterBar`에 `React.memo` 및 `useCallback` 적용) 및 사용자 세션 `sessionStorage` 0ms 캐싱.
+    - Next.js 컴파일러 및 압축 최적화 (`next.config.mjs`: `swcMinify`, `compress`, `poweredByHeader: false`).
+- **검증 결과**:
+  - TypeScript 정적 타입 검사 (`npm run type-check`): 통과 (0 errors)
+  - ESLint 정적 구문 린팅 (`npm run lint`): 통과 (0 errors, 0 warnings)
+

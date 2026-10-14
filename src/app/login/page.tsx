@@ -2,39 +2,27 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-} from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { LogIn, UserPlus, KeyRound, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Shield, Cloud, Sparkles } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { user } = useAuth();
-
-  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
 
   // If already logged in, redirect
   if (user) {
     return (
-      <div className="max-w-md mx-auto my-16 text-center space-y-4 glass-panel p-8 rounded-3xl border border-white/10">
-        <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-        <h2 className="text-xl font-bold text-white">이미 로그인되어 있습니다</h2>
-        <p className="text-xs text-slate-400">{user.email}</p>
+      <div className="max-w-md mx-auto my-16 text-center space-y-4 apple-card p-8 sm:p-10 rounded-[24px] border border-black/[0.08] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+        <CheckCircle2 className="w-12 h-12 text-[#34c759] mx-auto" />
+        <h2 className="text-xl font-semibold text-[#1d1d1f]">이미 로그인되어 있습니다</h2>
+        <p className="text-[14px] text-[#86868b]">{user.email}</p>
         <button
           onClick={() => router.push('/')}
-          className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+          className="px-7 py-2.5 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white font-normal text-[15px] transition-all active:scale-[0.97]"
         >
           홈으로 이동
         </button>
@@ -42,42 +30,27 @@ export default function LoginPage() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleSignIn = async () => {
     setError(null);
-    setInfo(null);
     setLoading(true);
 
     try {
-      if (mode === 'login') {
-        await signInWithEmailAndPassword(auth, email.trim(), password);
-        router.push('/');
-      } else if (mode === 'signup') {
-        if (password !== passwordConfirm) {
-          throw new Error('비밀번호가 일치하지 않습니다.');
-        }
-        if (password.length < 6) {
-          throw new Error('비밀번호는 최소 6자 이상이어야 합니다.');
-        }
-
-        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        await sendEmailVerification(cred.user);
-        setInfo('인증 메일을 발송했습니다! 이메일함을 확인하여 인증을 완료해 주세요.');
-        setMode('login');
-      } else if (mode === 'reset') {
-        await sendPasswordResetEmail(auth, email.trim());
-        setInfo('비밀번호 재설정 링크를 이메일로 전송했습니다.');
-        setMode('login');
-      }
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+      router.push('/');
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : '알 수 없는 오류';
-      let friendly = errorMsg;
-      if (errorMsg.includes('user-not-found') || errorMsg.includes('wrong-password') || errorMsg.includes('invalid-credential')) {
-        friendly = '이메일 또는 비밀번호가 올바르지 않습니다.';
-      } else if (errorMsg.includes('email-already-in-use')) {
-        friendly = '이미 가입된 이메일 주소입니다.';
-      } else if (errorMsg.includes('invalid-email')) {
-        friendly = '올바른 이메일 주소 형식이 아닙니다.';
+      let friendly = 'Google 로그인 중 오류가 발생했습니다. 다시 시도해 주세요.';
+
+      if (errorMsg.includes('popup-closed-by-user')) {
+        friendly = '로그인 창이 닫혔습니다. 다시 시도해 주세요.';
+      } else if (errorMsg.includes('popup-blocked')) {
+        friendly = '브라우저 팝업이 차단되었습니다. 팝업 허용 후 다시 시도해 주세요.';
+      } else if (errorMsg.includes('unauthorized-domain')) {
+        friendly = 'Firebase 콘솔의 승인된 도메인(Authorized domains)에 localhost가 등록되어 있는지 확인해 주세요.';
+      } else if (errorMsg.includes('network-request-failed')) {
+        friendly = '네트워크 연결이 원활하지 않습니다. 인터넷 상태를 확인해 주세요.';
       }
       setError(friendly);
     } finally {
@@ -86,147 +59,85 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto my-8">
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl space-y-6">
-        {/* Header Tabs */}
-        <div className="text-center space-y-1">
-          <h2 className="text-2xl font-black text-white tracking-tight">
-            {mode === 'login' ? '호스트 및 관리자 로그인' : mode === 'signup' ? '새 계정 생성' : '비밀번호 재설정'}
+    <div className="max-w-md mx-auto my-12 px-4 sm:px-0">
+      <div className="apple-card p-8 sm:p-10 rounded-[28px] border border-black/[0.08] bg-white shadow-[0_4px_28px_rgba(0,0,0,0.05)] space-y-8 text-center">
+        {/* Brand / Header */}
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/[0.04] text-[12px] font-medium text-[#86868b] mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-[#0066cc]" />
+            <span>간편하고 안전한 원클릭 인증</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight">
+            호스트 및 관리자 로그인
           </h2>
-          <p className="text-xs text-slate-400">
-            {mode === 'login'
-              ? '온라인 클라우드 저장 및 어드민 관리 권한 계정'
-              : mode === 'signup'
-              ? '이메일 인증을 통해 안전하게 계정을 생성합니다'
-              : '가입하신 이메일로 재설정 링크를 보내드립니다'}
+          <p className="text-[14px] text-[#86868b] leading-relaxed max-w-sm mx-auto">
+            별도의 회원가입이나 비밀번호 없이<br className="hidden sm:inline" /> Google 계정으로 1초 만에 바로 시작하세요.
           </p>
         </div>
 
-        {/* Feedback alerts */}
+        {/* Error alert */}
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-2xl bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#d70015] text-[13px] flex items-center gap-2 text-left">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
-        {info && (
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{info}</span>
-          </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">이메일 주소</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-slate-500"
-              required
-            />
-          </div>
-
-          {mode !== 'reset' && (
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-slate-300">비밀번호</label>
-                {mode === 'login' && (
-                  <button
-                    type="button"
-                    onClick={() => setMode('reset')}
-                    className="text-[11px] text-indigo-400 hover:text-indigo-300"
-                  >
-                    비밀번호를 잊으셨나요?
-                  </button>
-                )}
-              </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-slate-500"
-                required
-              />
-            </div>
-          )}
-
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">비밀번호 확인</label>
-              <input
-                type="password"
-                value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-slate-500"
-                required
-              />
-            </div>
-          )}
-
+        {/* Google One-Click Button */}
+        <div className="space-y-4">
           <button
-            type="submit"
+            type="button"
+            onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            className="w-full py-4 px-6 rounded-full bg-white hover:bg-[#f5f5f7] border border-black/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] text-[#1d1d1f] font-medium text-[16px] flex items-center justify-center gap-3 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
-              <span>처리 중...</span>
-            ) : mode === 'login' ? (
-              <>
-                <LogIn className="w-4 h-4" />
-                <span>로그인하기</span>
-              </>
-            ) : mode === 'signup' ? (
-              <>
-                <UserPlus className="w-4 h-4" />
-                <span>가입하고 인증메일 받기</span>
-              </>
+              <div className="flex items-center gap-2 text-[#86868b]">
+                <div className="w-4 h-4 border-2 border-[#86868b] border-t-transparent rounded-full animate-spin"></div>
+                <span>Google 계정 확인 중...</span>
+              </div>
             ) : (
               <>
-                <KeyRound className="w-4 h-4" />
-                <span>재설정 메일 발송</span>
+                {/* Official Google G Logo */}
+                <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>Google 계정으로 계속하기</span>
               </>
             )}
           </button>
-        </form>
+        </div>
 
-        {/* Toggle mode */}
-        <div className="pt-2 border-t border-white/10 text-center text-xs text-slate-400">
-          {mode === 'login' ? (
-            <p>
-              아직 계정이 없으신가요?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('signup');
-                  setError(null);
-                  setInfo(null);
-                }}
-                className="text-indigo-400 font-bold hover:underline"
-              >
-                회원가입하기
-              </button>
-            </p>
-          ) : (
-            <p>
-              이미 계정이 있으신가요?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('login');
-                  setError(null);
-                  setInfo(null);
-                }}
-                className="text-indigo-400 font-bold hover:underline"
-              >
-                로그인 화면으로
-              </button>
-            </p>
-          )}
+        {/* Feature benefits highlight */}
+        <div className="pt-6 border-t border-black/[0.06] text-left space-y-3">
+          <p className="text-[12px] font-semibold text-[#86868b] tracking-wide uppercase">
+            로그인 시 제공되는 기능
+          </p>
+          <div className="space-y-2 text-[13px] text-[#515154]">
+            <div className="flex items-center gap-2.5">
+              <Cloud className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+              <span>클라우드 세션 영구 보관 및 히스토리 조회</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Shield className="w-4 h-4 text-[#34c759] flex-shrink-0" />
+              <span>관리자 권한 승격 시 실시간 모니터링 & 설정 제어</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -86,12 +86,20 @@ export function setupSocketServer(io: SocketIOServer) {
     });
 
     // 2. Send message / question
-    socket.on('send_message', async (payload: { content: string; isQuestion?: boolean }) => {
+    socket.on('send_message', async (payload: { content: string; isQuestion?: boolean; slug?: string; nickname?: string }) => {
       try {
-        const { slug, nickname } = data;
+        const slug = data.slug || payload.slug;
+        const nickname = data.nickname || payload.nickname;
         if (!slug || !nickname) {
           socket.emit('error', { code: 'NOT_IN_ROOM', message: '방에 먼저 입장해야 합니다.' });
           return;
+        }
+
+        // Recover socket session data and join room if missing
+        if (!data.slug || !data.nickname) {
+          data.slug = slug;
+          data.nickname = nickname.trim().slice(0, 20);
+          socket.join(`room:${slug}`);
         }
 
         const content = (payload.content || '').trim();

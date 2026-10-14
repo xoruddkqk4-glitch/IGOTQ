@@ -9,55 +9,59 @@ export const Header: React.FC = () => {
   const { user, profile, signOut } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 w-full glass-panel border-b border-white/10 px-4 py-3">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-            <MessageSquare className="w-5 h-5" />
+    <header className="sticky top-0 z-50 w-full apple-nav-global h-16 flex items-center px-4 sm:px-8 border-b border-white/[0.08]">
+      <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
+        {/* Brand */}
+        <Link href="/" className="flex items-center gap-2.5 group transition-opacity hover:opacity-85">
+          <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center font-bold shadow-sm">
+            <MessageSquare className="w-4 h-4 fill-black text-black" />
           </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
-                IGOTQ
-              </span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                Live
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 hidden sm:block">I Got A Question! 휘발성 Q&A 백채널</p>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-[17px] text-white tracking-tight">
+              IGOTQ
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#34c759]/20 text-[#34c759] text-[10px] font-semibold tracking-wider border border-[#34c759]/30">
+              LIVE
+            </span>
           </div>
         </Link>
 
-        <nav className="flex items-center gap-3">
+        {/* Navigation links & Actions */}
+        <nav className="flex items-center gap-3 sm:gap-5 text-[14px] text-[#d2d2d7]">
           {profile?.canPersist && (
             <Link
               href="/history"
-              className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[#d2d2d7] hover:text-white hover:bg-white/10 transition-all font-medium text-[13px] sm:text-[14px]"
             >
-              <Clock className="w-4 h-4 text-cyan-400" />
-              <span className="hidden sm:inline">저장된 세션</span>
+              <Clock className="w-4 h-4 text-[#86868b]" />
+              <span>저장된 세션</span>
             </Link>
           )}
 
           {profile?.role === 'admin' && (
             <Link
               href="/admin"
-              className="flex items-center gap-1.5 text-xs font-semibold text-indigo-300 hover:text-white px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[#d2d2d7] hover:text-white hover:bg-white/10 transition-all font-medium text-[13px] sm:text-[14px]"
             >
-              <Shield className="w-4 h-4 text-indigo-400" />
-              <span>관리자</span>
+              <Shield className="w-4 h-4 text-[#34c759]" />
+              <span className="text-white font-medium">관리자</span>
             </Link>
           )}
 
           {user ? (
-            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-              <span className="text-xs text-slate-300 flex items-center gap-1">
-                <User className="w-3.5 h-3.5 text-slate-400" />
-                <span className="max-w-[120px] truncate">{user.email}</span>
-              </span>
+            <div className="flex items-center gap-2.5 pl-3 sm:pl-4 border-l border-white/15">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[13px] text-[#f5f5f7]">
+                <User className="w-3.5 h-3.5 text-[#86868b]" />
+                <span className="max-w-[140px] sm:max-w-[200px] truncate">{user.email}</span>
+                {profile?.role === 'admin' && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded bg-[#0066cc]/30 text-[#2997ff] text-[10px] font-bold tracking-wider">
+                    ADMIN
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => signOut()}
-                className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
+                className="flex items-center gap-1 p-2 rounded-full text-[#86868b] hover:text-white hover:bg-white/10 transition-colors"
                 title="로그아웃"
               >
                 <LogOut className="w-4 h-4" />
@@ -66,9 +70,9 @@ export const Header: React.FC = () => {
           ) : (
             <Link
               href="/login"
-              className="flex items-center gap-1.5 text-xs font-medium text-slate-200 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+              className="apple-btn-primary px-4 py-1.5 text-[13px] sm:text-[14px] flex items-center gap-1.5 rounded-full"
             >
-              <LogIn className="w-4 h-4" />
+              <LogIn className="w-3.5 h-3.5" />
               <span>로그인</span>
             </Link>
           )}

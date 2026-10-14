@@ -1,3 +1,7 @@
+import nextEnv from '@next/env';
+const { loadEnvConfig } = nextEnv;
+loadEnvConfig(process.cwd());
+
 import { adminAuth, adminFirestore } from '../src/server/firebaseAdmin';
 
 async function setAdmin() {

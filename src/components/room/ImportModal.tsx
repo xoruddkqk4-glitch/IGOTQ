@@ -51,24 +51,26 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, roomI
     <Modal isOpen={isOpen} onClose={onClose} title="이전 세션 기록 복원 (JSON 업로드)">
       <div className="space-y-4">
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-xl bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#d70015] text-[13px] flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <p className="text-xs text-slate-300 leading-relaxed">
+        <p className="text-[14px] text-[#86868b] leading-relaxed">
           이전에 다운로드했던 IGOTQ 백업 JSON 파일을 업로드하면 질문과 답변 기록이{' '}
-          <span className="text-purple-400 font-bold">[이전 세션 기록]</span> 태그와 함께 현재 방에 즉시 복원됩니다.
+          <span className="text-[#1d1d1f] font-semibold">[이전 기록]</span> 태그와 함께 현재 방에 즉시 복원됩니다.
         </p>
 
-        <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-indigo-500/30 hover:border-indigo-500/60 rounded-2xl bg-indigo-500/5 hover:bg-indigo-500/10 cursor-pointer transition-all">
+        <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-black/[0.12] hover:border-[#0066cc] rounded-[18px] bg-[#f5f5f7] hover:bg-black/[0.02] cursor-pointer transition-all">
           <input type="file" accept=".json" onChange={handleFileChange} className="hidden" />
-          <UploadCloud className="w-8 h-8 text-indigo-400 mb-2" />
-          <span className="text-xs font-bold text-white">
+          <div className="w-12 h-12 rounded-full bg-black/[0.04] text-[#0066cc] flex items-center justify-center mb-3">
+            <UploadCloud className="w-6 h-6" />
+          </div>
+          <span className="text-[15px] font-semibold text-[#1d1d1f]">
             {loading ? '복원 파일 파싱 중...' : 'JSON 백업 파일 선택 또는 드래그'}
           </span>
-          <span className="text-[11px] text-slate-400 mt-0.5">최대 2MB / 2,000개 메시지 지원</span>
+          <span className="text-[12px] text-[#86868b] mt-1">최대 2MB / 2,000개 메시지 지원</span>
         </label>
       </div>
     </Modal>

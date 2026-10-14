@@ -33,6 +33,9 @@ async function bootstrap() {
         origin: '*',
         methods: ['GET', 'POST'],
       },
+      transports: ['websocket', 'polling'],
+      perMessageDeflate: false,
+      httpCompression: false,
     });
 
     setServerIO(io);

@@ -25,7 +25,15 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem('igotq:profile');
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (u: User) => {
@@ -37,6 +45,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (res.ok) {
         const data = await res.json();
         setProfile(data.user);
+        try {
+          sessionStorage.setItem('igotq:profile', JSON.stringify(data.user));
+        } catch {}
       }
     } catch (err) {
       console.error('Failed to fetch user profile:', err);
@@ -50,6 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchProfile(currentUser);
       } else {
         setProfile(null);
+        try {
+          sessionStorage.removeItem('igotq:profile');
+        } catch {}
       }
       setLoading(false);
     });
@@ -63,6 +77,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    try {
+      sessionStorage.removeItem('igotq:profile');
+    } catch {}
     await fbSignOut(auth);
     setUser(null);
     setProfile(null);

@@ -77,9 +77,9 @@ export const ImportDropzone: React.FC = () => {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {error && (
-        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#d70015] text-[14px] font-medium flex items-center gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -92,20 +92,20 @@ export const ImportDropzone: React.FC = () => {
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
+        className={`flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-[20px] cursor-pointer transition-all ${
           dragOver
-            ? 'border-indigo-500 bg-indigo-500/10'
-            : 'border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.04]'
+            ? 'border-[#0066cc] bg-[#0066cc]/5'
+            : 'border-black/[0.12] hover:border-[#0066cc] bg-[#f5f5f7] hover:bg-black/[0.02]'
         }`}
       >
         <input type="file" accept=".json" onChange={handleFileChange} className="hidden" />
-        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-2.5">
-          <UploadCloud className="w-5 h-5" />
+        <div className="w-14 h-14 rounded-full bg-black/[0.04] text-[#0066cc] flex items-center justify-center mb-3.5">
+          <UploadCloud className="w-7 h-7" />
         </div>
-        <p className="text-xs font-semibold text-slate-200">
-          {loading ? '세션 복원 중...' : '이전 세션 백업 JSON 파일 드래그 앤 드롭'}
+        <p className="text-[18px] sm:text-[20px] font-semibold text-[#1d1d1f]">
+          {loading ? '세션 복원 중...' : 'JSON 백업 파일 선택 또는 드래그'}
         </p>
-        <p className="text-[11px] text-slate-500 mt-0.5">또는 클릭하여 파일 선택 (.json 파일만 지원)</p>
+        <p className="text-[14px] text-[#86868b] mt-1.5">이전에 저장한 세션을 그대로 복원합니다</p>
       </label>
     </div>
   );

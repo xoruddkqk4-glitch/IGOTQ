@@ -40,39 +40,39 @@ export const HostToolbar: React.FC<HostToolbarProps> = ({
 
   return (
     <>
-      <div className="glass-panel p-2.5 rounded-2xl border border-indigo-500/30 bg-indigo-950/20 mb-4 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-1.5 pl-2">
-          <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-          <span className="text-xs font-bold text-indigo-300">방장(호스트) 전용 제어판</span>
+      <div className="apple-card p-3 sm:p-4 rounded-[16px] border border-black/[0.08] bg-white mb-5 shadow-[0_1px_4px_rgba(0,0,0,0.02)] flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 pl-1">
+          <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
+          <span className="text-[13px] font-semibold text-[#1d1d1f]">방장(호스트) 제어판</span>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Export Button */}
           <button
             onClick={() => setShowExport(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[11px] bg-[#fafafc] hover:bg-[#f5f5f7] border border-black/[0.08] text-[13px] font-normal text-[#1d1d1f] transition-all active:scale-[0.97]"
           >
-            <Download className="w-3.5 h-3.5 text-cyan-400" />
+            <Download className="w-3.5 h-3.5 text-[#0066cc]" />
             <span>대화 다운로드</span>
           </button>
 
           {/* Import Button */}
           <button
             onClick={() => setShowImport(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[11px] bg-[#fafafc] hover:bg-[#f5f5f7] border border-black/[0.08] text-[13px] font-normal text-[#1d1d1f] transition-all active:scale-[0.97]"
           >
-            <Upload className="w-3.5 h-3.5 text-purple-400" />
+            <Upload className="w-3.5 h-3.5 text-[#0066cc]" />
             <span>세션 복원</span>
           </button>
 
           {/* Co-host Share Link */}
           <button
             onClick={handleCopyHostLink}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[11px] bg-[#fafafc] hover:bg-[#f5f5f7] border border-black/[0.08] text-[13px] font-normal text-[#1d1d1f] transition-all active:scale-[0.97]"
             title="공동 발표자에게 호스트 권한 링크 복사"
           >
-            {copiedHostLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Link2 className="w-3.5 h-3.5 text-indigo-400" />}
-            <span>{copiedHostLink ? '복사됨!' : '공동 발표자 링크'}</span>
+            {copiedHostLink ? <Check className="w-3.5 h-3.5 text-[#34c759]" /> : <Link2 className="w-3.5 h-3.5 text-[#0066cc]" />}
+            <span>{copiedHostLink ? '복사 완료' : '공동 발표자 링크'}</span>
           </button>
 
           {/* Close Room Button */}
@@ -82,7 +82,7 @@ export const HostToolbar: React.FC<HostToolbarProps> = ({
                 onCloseRoom();
               }
             }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-semibold text-red-300 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[11px] bg-[#ff3b30]/10 hover:bg-[#ff3b30]/15 border border-[#ff3b30]/20 text-[13px] font-normal text-[#d70015] transition-all active:scale-[0.97]"
           >
             <Power className="w-3.5 h-3.5" />
             <span>방 종료</span>

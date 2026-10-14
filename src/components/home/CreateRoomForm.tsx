@@ -77,51 +77,50 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#d70015] text-[14px] font-medium flex items-center gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       <div>
-        <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-          세미나 / 수업 / 발표 제목 <span className="text-indigo-400">*</span>
+        <label className="block text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] mb-2">
+          방 제목 <span className="text-[#0066cc]">*</span>
         </label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="예: 2026 AI 융합교육 세미나 Q&A"
-          className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-slate-500"
+          placeholder="예: 2026 AI 세미나 Q&A"
+          className="w-full px-5 py-3.5 rounded-[14px] bg-[#f5f5f7] border border-black/[0.12] text-[17px] sm:text-[18px] font-medium text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0071e3] focus:border-transparent outline-none transition-all"
           required
         />
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
-          <span>접속 슬러그 (URL 코드)</span>
-          <span className="text-[11px] text-slate-500 font-normal">미입력 시 무작위 자동 생성</span>
+        <label className="block text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] mb-2">
+          방 코드 (선택)
         </label>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-slate-500 font-mono pl-1">igotq.com/</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[16px] text-[#86868b] font-mono pl-1">igotq.com/</span>
           <input
             type="text"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            placeholder="ai-edu-2026"
-            className="flex-1 px-3.5 py-2 rounded-xl glass-input text-sm font-mono text-white placeholder-slate-500"
+            placeholder="ai-edu (미입력 시 자동 생성)"
+            className="flex-1 px-4 py-3 rounded-[14px] bg-[#f5f5f7] border border-black/[0.12] text-[16px] font-mono text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0071e3] focus:border-transparent outline-none transition-all"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 text-cyan-400" />
-          <span>세션 유지 시간 (만료 후 자동 파기)</span>
+        <label className="block text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] mb-2 flex items-center gap-1.5">
+          <Clock className="w-4 h-4 text-[#86868b]" />
+          <span>세션 유지 시간</span>
         </label>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-2.5">
           {[
             { label: '1시간', val: 60 },
             { label: '2시간', val: 120 },
@@ -132,10 +131,10 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
               key={item.val}
               type="button"
               onClick={() => setTtlMinutes(item.val)}
-              className={`py-2 rounded-lg text-xs font-medium border transition-all ${
+              className={`py-2.5 px-3 rounded-full text-[15px] sm:text-[16px] font-semibold border transition-all active:scale-[0.97] ${
                 ttlMinutes === item.val
-                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
-                  : 'bg-white/5 text-slate-300 border-white/5 hover:bg-white/10'
+                  ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]'
+                  : 'bg-[#f5f5f7] text-[#1d1d1f] border-black/[0.08] hover:bg-[#e8e8ed]'
               }`}
             >
               {item.label}
@@ -146,13 +145,13 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
 
       {/* Cloud Persistence Toggle (Available for approved hosts) */}
       {profile?.canPersist && (
-        <div className="p-3.5 rounded-xl bg-cyan-950/30 border border-cyan-500/20 space-y-2.5">
+        <div className="p-4 rounded-[16px] bg-[#f5f5f7] border border-black/[0.08] space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Cloud className="w-4 h-4 text-cyan-400" />
+            <div className="flex items-center gap-2.5">
+              <Cloud className="w-5 h-5 text-[#0066cc]" />
               <div>
-                <span className="text-xs font-bold text-cyan-200">온라인 상에 세션 기록 저장</span>
-                <p className="text-[10px] text-cyan-400/80">승인된 계정 전용 암호화 클라우드 보관</p>
+                <span className="text-[15px] font-semibold text-[#1d1d1f]">클라우드 암호화 보관</span>
+                <p className="text-[13px] text-[#86868b]">승인 계정 전용 히스토리 저장</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -162,20 +161,20 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
                 onChange={(e) => setIsCloudPersisted(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+              <div className="w-11 h-6 bg-[#e5e5ea] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#34c759]"></div>
             </label>
           </div>
 
           {isCloudPersisted && (
-            <label className="flex items-start gap-2 pt-2 border-t border-cyan-500/20 cursor-pointer">
+            <label className="flex items-start gap-2 pt-2.5 border-t border-black/[0.06] cursor-pointer">
               <input
                 type="checkbox"
                 checked={consentGiven}
                 onChange={(e) => setConsentGiven(e.target.checked)}
-                className="mt-0.5 rounded border-cyan-400 text-cyan-600 focus:ring-cyan-500"
+                className="mt-0.5 rounded border-black/20 text-[#0066cc] focus:ring-[#0071e3]"
               />
-              <span className="text-[11px] text-cyan-300 leading-snug">
-                (필수) 질문자 개인 식별 정보는 암호화 처리되며, 세션 유효 기간 종료 시까지 안전하게 보관됨에 동의합니다.
+              <span className="text-[13px] text-[#86868b] leading-snug">
+                (필수) 개인 식별 정보는 암호화 처리되며, 세션 기간 종료 시까지 안전하게 보관됨에 동의합니다.
               </span>
             </label>
           )}
@@ -185,15 +184,14 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+        className="w-full py-4 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white font-semibold text-[18px] sm:text-[19px] flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-50"
       >
         {loading ? (
           <span>방 개설 중...</span>
         ) : (
           <>
-            <Sparkles className="w-4 h-4" />
             <span>새 Q&A 방 개설하기</span>
-            <ArrowRight className="w-4 h-4 ml-1" />
+            <ArrowRight className="w-5 h-5 ml-0.5" />
           </>
         )}
       </button>
