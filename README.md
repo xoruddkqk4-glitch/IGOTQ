@@ -113,4 +113,19 @@
   - ESLint 정적 구문 린팅 (`npm run lint`): 통과 (0 errors, 0 warnings)
   - 홈 화면 클라이언트 청크 응답 검증: 모든 청크 200 OK 서빙 완료
 
+## [2026-10-14 19:15] 업데이트 이력 (Commit ID: 5285838)
+- **수정 내용**:
+  - **대화창 기본 정렬 방식 개선 (백채널 뷰와 시간순 동기화)**:
+    - 방장/참여자 대화창(`src/app/[slug]/page.tsx`)의 기본 정렬(`sortOption`)을 백채널 뷰(`StreamFeedView.tsx`)와 동일하게 시간순(최신글이 맨 아래로 누적)으로 변경.
+    - 카카오톡 메신저 UI 멘탈 모델 및 하단 메시지 입력창 동선과 완벽히 일치하도록 수정하여, 메시지 작성 즉시 하단에 자연스럽게 누적되도록 개선.
+    - 새 메시지 수신 및 발송 시 하단 자동 스크롤(`scrollToBottom`)과 정렬 순서의 불일치로 발생하던 UX 모순 해결.
+  - **상단 정렬 셀렉터 옵션 및 타입 체계 개편**:
+    - `QAFilterBar.tsx`의 `SortOption` 타입을 `'chronological' | 'reverse' | 'pendingFirst'`로 명확화.
+    - `KakaoNoticeBar.tsx` 및 `QAFilterBar.tsx`의 정렬 선택 옵션을 직관적으로 정리:
+      - `시간순 (최신글 아래)`: 기본값 (메신저 및 백채널 뷰 표준)
+      - `최신순 (최신글 위)`: 게시판형 역순 정렬
+      - `미답변 우선`: 미답변 질문 우선 노출 (질문 간 시간순 정렬)
+- **검증 결과**:
+  - TypeScript 정적 타입 검사 (`npx tsc --noEmit`): 통과 (0 errors, exit code 0)
+
 

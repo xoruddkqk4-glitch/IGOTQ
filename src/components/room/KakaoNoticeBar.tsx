@@ -294,15 +294,15 @@ export const KakaoNoticeBar: React.FC<KakaoNoticeBarProps> = ({
           </div>
 
           {/* Sort Selector */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <ArrowUpDown className="w-3.5 h-3.5 text-[#86868b]" />
             <select
               value={currentSort}
               onChange={(e) => onSortChange(e.target.value as SortOption)}
               className="bg-transparent text-[12px] text-[#333333] font-medium focus:outline-none cursor-pointer py-1 pr-1"
             >
-              <option value="latest">최신순</option>
-              <option value="oldest">오래된순</option>
+              <option value="chronological">시간순 (최신글 아래)</option>
+              <option value="reverse">최신순 (최신글 위)</option>
               <option value="pendingFirst">미답변 우선</option>
             </select>
           </div>

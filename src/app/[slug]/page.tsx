@@ -41,7 +41,7 @@ export default function RoomPage() {
   const [showEditNotice, setShowEditNotice] = useState(false);
 
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
-  const [sortOption, setSortOption] = useState<SortOption>('latest');
+  const [sortOption, setSortOption] = useState<SortOption>('chronological');
   const [isExpired, setIsExpired] = useState(false);
   const [expiredMsg, setExpiredMsg] = useState<string | undefined>();
   const [socketError, setSocketError] = useState<string | null>(null);
@@ -67,8 +67,10 @@ export default function RoomPage() {
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages.length, scrollToBottom]);
+    if (sortOption === 'chronological') {
+      scrollToBottom();
+    }
+  }, [messages.length, scrollToBottom, sortOption]);
 
   const dateStr = useMemo(() => {
     const d = room?.createdAt ? new Date(room.createdAt) : new Date();
@@ -365,16 +367,16 @@ export default function RoomPage() {
       list = list.filter((m) => m.status === 'answered');
     }
 
-    // Sort
-    if (sortOption === 'latest') {
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } else if (sortOption === 'oldest') {
+    // Sort (기본 'chronological': 백채널 뷰와 동일하게 시간순으로 최신글이 아래에 누적)
+    if (sortOption === 'chronological') {
       list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    } else if (sortOption === 'reverse') {
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } else if (sortOption === 'pendingFirst') {
       list.sort((a, b) => {
         if (a.status === 'pending' && b.status !== 'pending') return -1;
         if (a.status !== 'pending' && b.status === 'pending') return 1;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       });
     }
 

@@ -4,7 +4,7 @@ import React from 'react';
 import { ArrowUpDown, HelpCircle, CheckCircle2, ListFilter } from 'lucide-react';
 
 export type FilterTab = 'all' | 'pending' | 'answered';
-export type SortOption = 'latest' | 'oldest' | 'pendingFirst';
+export type SortOption = 'chronological' | 'reverse' | 'pendingFirst';
 
 interface QAFilterBarProps {
   currentTab: FilterTab;
@@ -77,8 +77,8 @@ export const QAFilterBar = React.memo<QAFilterBarProps>(({
           onChange={(e) => onSortChange(e.target.value as SortOption)}
           className="bg-white border border-black/[0.1] rounded-full px-3.5 py-1.5 text-[13px] font-normal text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
         >
-          <option value="latest">최신순 정렬</option>
-          <option value="oldest">오래된순 정렬</option>
+          <option value="chronological">시간순 (최신글 아래)</option>
+          <option value="reverse">최신순 (최신글 위)</option>
           <option value="pendingFirst">미답변 질문 우선</option>
         </select>
       </div>
