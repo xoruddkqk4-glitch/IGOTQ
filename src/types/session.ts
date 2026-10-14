@@ -26,7 +26,7 @@ export interface SessionExportData {
   roomInfo: {
     title: string;
     slug: string;
-    expiresAt?: string;
+    expiresAt?: string | null;
   };
   messages: SessionExportMessage[];
 }

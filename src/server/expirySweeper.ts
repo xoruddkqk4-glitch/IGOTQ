@@ -19,7 +19,7 @@ export function startExpirySweeper(): void {
           io.to(`room:${slug}`).emit('room_expired', {
             slug,
             reason: 'SESSION_TTL_EXPIRED',
-            message: '세션 유효 시간이 만료되어 방이 안전하게 종료 및 삭제되었습니다.',
+            message: '세션 보관 유지 시간이 만료되어 방이 안전하게 삭제되었습니다.',
           });
         }
 

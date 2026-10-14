@@ -14,7 +14,11 @@ export class RedisStore implements VolatileStore {
   }
 
   async createRoom(room: RoomInfo): Promise<void> {
-    const ttlSeconds = Math.max(1, Math.floor((new Date(room.expiresAt).getTime() - Date.now()) / 1000));
+    const ttlSeconds =
+      room.isClosed && room.expiresAt
+        ? Math.max(1, Math.floor((new Date(room.expiresAt).getTime() - Date.now()) / 1000))
+        : 7 * 24 * 3600; // Keep active rooms for up to 7 days
+    const score = room.isClosed && room.expiresAt ? new Date(room.expiresAt).getTime() : 8640000000000000;
     const roomKey = `room:${room.slug}`;
     await this.client
       .multi()
@@ -22,32 +26,61 @@ export class RedisStore implements VolatileStore {
         id: room.id,
         slug: room.slug,
         title: room.title,
+        notice: room.notice || '',
+        noticeAttachment: room.noticeAttachment ? JSON.stringify(room.noticeAttachment) : '',
         hostTokenHash: room.hostTokenHash || '',
         hostUid: room.hostUid || '',
         isCloudPersisted: room.isCloudPersisted ? '1' : '0',
-        expiresAt: room.expiresAt,
+        ttlMinutes: String(room.ttlMinutes || 120),
+        isClosed: room.isClosed ? '1' : '0',
+        closedAt: room.closedAt || '',
+        expiresAt: room.expiresAt || '',
         createdAt: room.createdAt,
       })
       .expire(roomKey, ttlSeconds)
-      .zadd('rooms:active', new Date(room.expiresAt).getTime(), room.slug)
+      .zadd('rooms:active', score, room.slug)
       .exec();
   }
 
   async getRoom(slug: string): Promise<RoomInfo | null> {
     const raw = await this.client.hgetall(`room:${slug}`);
     if (!raw || !raw.id) return null;
+
+    // Lazy expiration check
+    const nowTime = Date.now();
+    const isExpired = raw.expiresAt && new Date(raw.expiresAt).getTime() <= nowTime;
+    if (isExpired) {
+      await this.deleteRoom(slug);
+      return null;
+    }
+
     const count = await this.getParticipantCount(slug);
     return {
       id: raw.id,
       slug: raw.slug,
       title: raw.title,
+      notice: raw.notice || null,
+      noticeAttachment: raw.noticeAttachment ? (() => {
+        try { return JSON.parse(raw.noticeAttachment); } catch { return null; }
+      })() : null,
       hostTokenHash: raw.hostTokenHash || undefined,
       hostUid: raw.hostUid || null,
       isCloudPersisted: raw.isCloudPersisted === '1',
-      expiresAt: raw.expiresAt,
+      ttlMinutes: parseInt(raw.ttlMinutes, 10) || 120,
+      isClosed: raw.isClosed === '1',
+      closedAt: raw.closedAt || null,
+      expiresAt: raw.expiresAt || null,
       createdAt: raw.createdAt,
       participantCount: count,
     };
+  }
+
+  async updateRoom(slug: string, updates: Partial<RoomInfo>): Promise<RoomInfo | null> {
+    const room = await this.getRoom(slug);
+    if (!room) return null;
+    const updated: RoomInfo = { ...room, ...updates };
+    await this.createRoom(updated);
+    return updated;
   }
 
   async deleteRoom(slug: string): Promise<void> {
@@ -78,7 +111,10 @@ export class RedisStore implements VolatileStore {
 
   async addMessage(slug: string, message: StoredMessage): Promise<void> {
     const room = await this.getRoom(slug);
-    const ttlSeconds = room ? Math.max(1, Math.floor((new Date(room.expiresAt).getTime() - Date.now()) / 1000)) : 3600;
+    const ttlSeconds =
+      room && room.isClosed && room.expiresAt
+        ? Math.max(1, Math.floor((new Date(room.expiresAt).getTime() - Date.now()) / 1000))
+        : 7 * 24 * 3600;
     const msgsKey = `room:${slug}:msgs`;
     const orderKey = `room:${slug}:order`;
 

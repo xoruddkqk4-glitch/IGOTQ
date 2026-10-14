@@ -31,7 +31,26 @@ export async function POST(req: NextRequest) {
     const store = getServerStore();
     const existing = await store.getRoom(rawSlug);
     if (existing) {
-      return NextResponse.json({ error: '이미 사용 중인 방 코드(슬러그)입니다.' }, { status: 409 });
+      const nowTime = Date.now();
+      const isExpired = existing.expiresAt && new Date(existing.expiresAt).getTime() <= nowTime;
+      const isAbandoned =
+        !existing.isClosed && nowTime - new Date(existing.createdAt).getTime() > 24 * 60 * 60 * 1000;
+
+      if (isExpired || isAbandoned) {
+        // Expired room is cleaned up and slug is immediately reused
+        await store.deleteRoom(rawSlug);
+        if (existing.isCloudPersisted) {
+          await firestoreRepo.deleteRoom(existing.id).catch(() => {});
+        }
+      } else {
+        return NextResponse.json(
+          {
+            error:
+              '현재 활발히 사용 중이거나 보관 유지 중인 방 코드입니다. 세션 보관 기간이 만료된 후 동일한 방 코드를 다시 사용하실 수 있습니다.',
+          },
+          { status: 409 }
+        );
+      }
     }
 
     // Check Cloud Persistence permission
@@ -65,7 +84,6 @@ export async function POST(req: NextRequest) {
     const hostTokenHash = hashHostToken(hostToken);
     const roomId = `room-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + ttlMinutes * 60 * 1000).toISOString();
 
     const room: RoomInfo = {
       id: roomId,
@@ -74,7 +92,10 @@ export async function POST(req: NextRequest) {
       hostTokenHash,
       hostUid,
       isCloudPersisted,
-      expiresAt,
+      ttlMinutes,
+      isClosed: false,
+      closedAt: null,
+      expiresAt: null, // Retention starts after room is closed by host
       createdAt: now.toISOString(),
       participantCount: 0,
     };
@@ -91,6 +112,9 @@ export async function POST(req: NextRequest) {
         slug: room.slug,
         title: room.title,
         isCloudPersisted: room.isCloudPersisted,
+        ttlMinutes: room.ttlMinutes,
+        isClosed: room.isClosed,
+        closedAt: room.closedAt,
         expiresAt: room.expiresAt,
         createdAt: room.createdAt,
       },

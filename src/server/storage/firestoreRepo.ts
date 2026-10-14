@@ -11,9 +11,14 @@ export class FirestoreRepo {
       id: room.id,
       slug: room.slug,
       title: room.title,
+      notice: room.notice || null,
+      noticeAttachment: room.noticeAttachment || null,
       hostUid: room.hostUid,
       isCloudPersisted: true,
-      expiresAt: room.expiresAt,
+      ttlMinutes: room.ttlMinutes || 120,
+      isClosed: Boolean(room.isClosed),
+      closedAt: room.closedAt || null,
+      expiresAt: room.expiresAt || null,
       createdAt: room.createdAt,
     });
   }
@@ -89,9 +94,14 @@ export class FirestoreRepo {
           id: d.id,
           slug: d.slug,
           title: d.title,
+          notice: d.notice || null,
+          noticeAttachment: d.noticeAttachment || null,
           hostUid: d.hostUid,
           isCloudPersisted: true,
-          expiresAt: d.expiresAt,
+          ttlMinutes: d.ttlMinutes || 120,
+          isClosed: Boolean(d.isClosed),
+          closedAt: d.closedAt || null,
+          expiresAt: d.expiresAt || null,
           createdAt: d.createdAt,
         });
       });

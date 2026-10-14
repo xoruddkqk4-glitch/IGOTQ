@@ -273,12 +273,14 @@ export default function AdminPage() {
                         </span>
                       ) : (
                         <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-black/[0.05] text-[#86868b]">
-                          휘발성(In-Memory)
+                          인메모리 세션
                         </span>
                       )}
                     </td>
                     <td className="py-3 px-3 text-[#86868b]">
-                      {new Date(r.expiresAt).toLocaleTimeString('ko-KR')}
+                      {r.isClosed && r.expiresAt
+                        ? `종료됨 (${new Date(r.expiresAt).toLocaleTimeString('ko-KR')} 만료)`
+                        : `진행 중 (종료 후 ${Math.round((r.ttlMinutes || 120) / 60)}시간 보관)`}
                     </td>
                   </tr>
                 ))

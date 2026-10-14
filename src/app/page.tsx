@@ -3,11 +3,10 @@
 import React, { useState } from 'react';
 import { CreateRoomForm } from '@/components/home/CreateRoomForm';
 import { JoinRoomForm } from '@/components/home/JoinRoomForm';
-import { ImportDropzone } from '@/components/home/ImportDropzone';
-import { LogIn, PlusCircle, UploadCloud, Zap, RefreshCw, Lock, ShieldCheck } from 'lucide-react';
+import { LogIn, PlusCircle, Zap, RefreshCw, Lock, ShieldCheck } from 'lucide-react';
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<'create' | 'join' | 'import'>('join');
+  const [activeTab, setActiveTab] = useState<'create' | 'join'>('join');
 
   return (
     <div className="space-y-12 sm:space-y-16 py-4 sm:py-8">
@@ -19,7 +18,7 @@ export default function HomePage() {
         </h1>
 
         <p className="text-[20px] sm:text-[24px] text-[#424245] font-normal max-w-xl mx-auto pt-1 leading-snug">
-          회원가입 없는 3초 접속 · 완전 휘발성 실시간 Q&A
+          회원가입 없는 3초 접속 · 무흔적 실시간 세션 Q&A
         </p>
       </section>
 
@@ -27,41 +26,31 @@ export default function HomePage() {
       <section className="max-w-xl mx-auto">
         <div className="apple-card p-6 sm:p-10 rounded-[28px] border border-black/[0.08] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.05)] space-y-7">
           {/* Segmented Tab Selector */}
-          <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-[#e8e8ed] rounded-full">
+          <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-[#e8e8ed] rounded-full w-full">
             <button
+              type="button"
               onClick={() => setActiveTab('join')}
-              className={`py-3 px-3 sm:px-4 rounded-full text-[15px] sm:text-[17px] font-semibold flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-3 px-4 rounded-full font-semibold flex items-center justify-center gap-2 whitespace-nowrap min-w-0 transition-all cursor-pointer select-none text-[15px] sm:text-[16px] ${
                 activeTab === 'join'
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_2px_6px_rgba(0,0,0,0.1)]'
+                  ? 'bg-white text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,0,0,0.12)] font-bold'
                   : 'text-[#6e6e73] hover:text-[#1d1d1f]'
               }`}
             >
-              <LogIn className="w-4 h-4 text-[#0066cc]" />
+              <LogIn className="w-4 h-4 text-[#0066cc] shrink-0" />
               <span>방 참여하기</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('create')}
-              className={`py-3 px-3 sm:px-4 rounded-full text-[15px] sm:text-[17px] font-semibold flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-3 px-4 rounded-full font-semibold flex items-center justify-center gap-2 whitespace-nowrap min-w-0 transition-all cursor-pointer select-none text-[15px] sm:text-[16px] ${
                 activeTab === 'create'
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_2px_6px_rgba(0,0,0,0.1)]'
+                  ? 'bg-white text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,0,0,0.12)] font-bold'
                   : 'text-[#6e6e73] hover:text-[#1d1d1f]'
               }`}
             >
-              <PlusCircle className="w-4 h-4 text-[#0066cc]" />
+              <PlusCircle className="w-4 h-4 text-[#0066cc] shrink-0" />
               <span>새 방 만들기</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('import')}
-              className={`py-3 px-3 sm:px-4 rounded-full text-[15px] sm:text-[17px] font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                activeTab === 'import'
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_2px_6px_rgba(0,0,0,0.1)]'
-                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <UploadCloud className="w-4 h-4 text-[#0066cc]" />
-              <span>세션 복원</span>
             </button>
           </div>
 
@@ -69,7 +58,6 @@ export default function HomePage() {
           <div className="pt-1 animate-fade-in">
             {activeTab === 'join' && <JoinRoomForm />}
             {activeTab === 'create' && <CreateRoomForm />}
-            {activeTab === 'import' && <ImportDropzone />}
           </div>
         </div>
       </section>
@@ -100,7 +88,7 @@ export default function HomePage() {
           <div className="w-11 h-11 rounded-full bg-black/[0.04] text-[#0066cc] flex items-center justify-center">
             <Lock className="w-5 h-5" />
           </div>
-          <h3 className="text-[18px] font-semibold text-[#1d1d1f]">100% 휘발성 보안</h3>
+          <h3 className="text-[18px] font-semibold text-[#1d1d1f]">무흔적 세션 보안</h3>
           <p className="text-[14px] text-[#6e6e73] leading-snug">
             세션 만료 시 서버 데이터 영구 파기
           </p>

@@ -183,3 +183,28 @@
 .animate-fade-in {
   animation: appleFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* KakaoTalk Design System Utilities */
+.kakao-chat-bg {
+  background-color: #bacee0;
+}
+
+.kakao-bubble-mine {
+  background-color: #fee500;
+  color: #000000;
+}
+
+.kakao-bubble-other {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.kakao-bubble-reply {
+  background-color: #fffde6;
+}
+
+.kakao-date-pill {
+  background-color: rgba(0, 0, 0, 0.18);
+  color: rgba(255, 255, 255, 0.95);
+}
+

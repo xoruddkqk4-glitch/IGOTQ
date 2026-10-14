@@ -77,9 +77,9 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
       {error && (
-        <div className="p-4 rounded-xl bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#d70015] text-[14px] font-medium flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#d70015] text-[14px] font-medium flex items-center gap-2 animate-fade-in">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -92,10 +92,15 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
         <input
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            if (error) setError(null);
+          }}
           placeholder="예: 2026 AI 세미나 Q&A"
-          className="w-full px-5 py-3.5 rounded-[14px] bg-[#f5f5f7] border border-black/[0.12] text-[17px] sm:text-[18px] font-medium text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0071e3] focus:border-transparent outline-none transition-all"
-          required
+          className={`w-full px-5 py-3.5 rounded-[14px] bg-[#f5f5f7] border text-[17px] sm:text-[18px] font-medium text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0071e3] focus:border-transparent outline-none transition-all ${
+            error && !title.trim() ? 'border-[#ff3b30] bg-[#ff3b30]/5' : 'border-black/[0.12]'
+          }`}
+          autoFocus
         />
       </div>
 
@@ -116,22 +121,25 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
       </div>
 
       <div>
-        <label className="block text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] mb-2 flex items-center gap-1.5">
+        <label className="block text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] mb-1 flex items-center gap-1.5">
           <Clock className="w-4 h-4 text-[#86868b]" />
-          <span>세션 유지 시간</span>
+          <span>세션 보관 유지 시간</span>
         </label>
+        <p className="text-[13px] text-[#86868b] mb-2.5">
+          진행 중에는 무제한 유지되며, <strong>방장이 방을 종료한 시점부터</strong> 설정한 시간 동안 세션이 보관됩니다.
+        </p>
         <div className="grid grid-cols-4 gap-2.5">
           {[
-            { label: '1시간', val: 60 },
-            { label: '2시간', val: 120 },
-            { label: '4시간', val: 240 },
-            { label: '12시간', val: 720 },
+            { label: '종료 후 1시간', val: 60 },
+            { label: '종료 후 2시간', val: 120 },
+            { label: '종료 후 4시간', val: 240 },
+            { label: '종료 후 12시간', val: 720 },
           ].map((item) => (
             <button
               key={item.val}
               type="button"
               onClick={() => setTtlMinutes(item.val)}
-              className={`py-2.5 px-3 rounded-full text-[15px] sm:text-[16px] font-semibold border transition-all active:scale-[0.97] ${
+              className={`py-2.5 px-2 text-center rounded-full text-[13px] sm:text-[14px] font-semibold border transition-all active:scale-[0.97] cursor-pointer ${
                 ttlMinutes === item.val
                   ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]'
                   : 'bg-[#f5f5f7] text-[#1d1d1f] border-black/[0.08] hover:bg-[#e8e8ed]'
@@ -184,7 +192,7 @@ export const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ initialTitle = '
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-4 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white font-semibold text-[18px] sm:text-[19px] flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-50"
+        className="w-full py-4 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white font-semibold text-[18px] sm:text-[19px] flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-50 cursor-pointer"
       >
         {loading ? (
           <span>방 개설 중...</span>

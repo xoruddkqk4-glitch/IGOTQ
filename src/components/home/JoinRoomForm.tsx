@@ -9,6 +9,7 @@ export const JoinRoomForm: React.FC = () => {
   const router = useRouter();
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,17 +23,18 @@ export const JoinRoomForm: React.FC = () => {
     clean = sanitizeSlug(clean);
 
     if (!clean) {
-      setError('올바른 방 코드 또는 URL을 입력해 주세요.');
+      setError('입장할 방 코드 또는 URL을 입력해 주세요.');
       return;
     }
 
+    setIsSubmitting(true);
     router.push(`/${clean}`);
   };
 
   return (
-    <form onSubmit={handleJoin} className="space-y-4">
+    <form onSubmit={handleJoin} noValidate className="space-y-4">
       {error && (
-        <p className="text-[14px] text-[#ff3b30] bg-[#ff3b30]/10 px-4 py-2.5 rounded-xl font-medium">
+        <p className="text-[14px] text-[#ff3b30] bg-[#ff3b30]/10 px-4 py-2.5 rounded-xl font-medium animate-fade-in">
           {error}
         </p>
       )}
@@ -41,17 +43,22 @@ export const JoinRoomForm: React.FC = () => {
         <input
           type="text"
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e) => {
+            setCode(e.target.value);
+            if (error) setError(null);
+          }}
           placeholder="방 코드 또는 URL 입력 (예: ai-edu)"
-          className="w-full flex-1 px-6 py-4 rounded-full bg-[#f5f5f7] border border-black/[0.12] text-[18px] sm:text-[20px] font-medium text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0071e3] focus:border-transparent outline-none transition-all font-mono"
-          required
+          className={`w-full flex-1 px-6 py-4 rounded-full bg-[#f5f5f7] border text-[18px] sm:text-[20px] font-medium text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0071e3] focus:border-transparent outline-none transition-all font-mono ${
+            error ? 'border-[#ff3b30] bg-[#ff3b30]/5' : 'border-black/[0.12]'
+          }`}
           autoFocus
         />
         <button
           type="submit"
-          className="w-full sm:w-auto px-9 py-4 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white text-[17px] sm:text-[18px] font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.97] shadow-none flex-shrink-0"
+          disabled={isSubmitting}
+          className="w-full sm:w-auto px-9 py-4 rounded-full bg-[#0066cc] hover:bg-[#0077ed] text-white text-[17px] sm:text-[18px] font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.97] shadow-none flex-shrink-0 cursor-pointer disabled:opacity-50"
         >
-          <span>참여하기</span>
+          <span>{isSubmitting ? '입장 중...' : '참여하기'}</span>
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>

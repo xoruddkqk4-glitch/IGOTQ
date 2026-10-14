@@ -15,13 +15,26 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({ room, participantCount, 
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
+    // 1. Room is actively running
+    if (!room.isClosed) {
+      const hours = Math.round((room.ttlMinutes || 120) / 60);
+      setTimeLeft(`진행 중 (종료 후 ${hours}시간 보관)`);
+      return;
+    }
+
+    // 2. Room is closed by host -> counting down post-close retention
+    if (!room.expiresAt) {
+      setTimeLeft('세션 종료됨');
+      return;
+    }
+
     const updateCountdown = () => {
       const now = Date.now();
-      const end = new Date(room.expiresAt).getTime();
+      const end = new Date(room.expiresAt!).getTime();
       const diff = end - now;
 
       if (diff <= 0) {
-        setTimeLeft('만료됨');
+        setTimeLeft('보관 만료됨');
         return;
       }
 
@@ -30,16 +43,16 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({ room, participantCount, 
       const secs = Math.floor((diff % (1000 * 60)) / 1000);
 
       if (hours > 0) {
-        setTimeLeft(`${hours}시간 ${mins}분`);
+        setTimeLeft(`보관 ${hours}시간 ${mins}분 남음`);
       } else {
-        setTimeLeft(`${mins}분 ${secs}초`);
+        setTimeLeft(`보관 ${mins}분 ${secs}초 남음`);
       }
     };
 
     updateCountdown();
     const timer = setInterval(updateCountdown, 1000);
     return () => clearInterval(timer);
-  }, [room.expiresAt]);
+  }, [room.isClosed, room.expiresAt, room.ttlMinutes]);
 
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {

@@ -71,7 +71,12 @@ export function setupSocketServer(io: SocketIOServer) {
             id: room.id,
             slug: room.slug,
             title: room.title,
+            notice: room.notice || null,
+            noticeAttachment: room.noticeAttachment || null,
             isCloudPersisted: room.isCloudPersisted,
+            ttlMinutes: room.ttlMinutes,
+            isClosed: room.isClosed,
+            closedAt: room.closedAt,
             expiresAt: room.expiresAt,
             createdAt: room.createdAt,
             participantCount,
@@ -131,6 +136,14 @@ export function setupSocketServer(io: SocketIOServer) {
           return;
         }
 
+        if (room.isClosed) {
+          socket.emit('error', {
+            code: 'ROOM_CLOSED',
+            message: '호스트가 세션을 종료하여 새 질문을 등록할 수 없습니다.',
+          });
+          return;
+        }
+
         const newMsg: StoredMessage = {
           id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           roomId: room.id,
@@ -138,7 +151,7 @@ export function setupSocketServer(io: SocketIOServer) {
           nickname,
           content: cleanText,
           isQuestion: Boolean(payload.isQuestion),
-          isHostReply: false,
+          isHostReply: Boolean(data.isHost),
           status: 'pending',
           isRestored: false,
           createdAt: new Date().toISOString(),
@@ -330,8 +343,51 @@ export function setupSocketServer(io: SocketIOServer) {
       }
     });
 
-    // 7. Close room (Host only)
+    // 7. Close room (Host only) - Begins post-close retention window
     socket.on('close_room', async () => {
+      try {
+        const { slug, isHost } = data;
+        if (!slug || !isHost) return;
+
+        const store = getServerStore();
+        const room = await store.getRoom(slug);
+        if (!room || room.isClosed) return;
+
+        const now = new Date();
+        const closedAt = now.toISOString();
+        const ttlMinutes = room.ttlMinutes || 120;
+        const expiresAt = new Date(now.getTime() + ttlMinutes * 60 * 1000).toISOString();
+
+        await store.updateRoom(slug, {
+          isClosed: true,
+          closedAt,
+          expiresAt,
+        });
+
+        if (room.isCloudPersisted) {
+          await firestoreRepo.saveRoom({
+            ...room,
+            isClosed: true,
+            closedAt,
+            expiresAt,
+          }).catch((e) => console.error('Cloud close err:', e));
+        }
+
+        io.to(`room:${slug}`).emit('room_closed', {
+          slug,
+          isClosed: true,
+          closedAt,
+          expiresAt,
+          ttlMinutes,
+          message: `호스트가 세션을 종료하였습니다. 세션은 ${Math.round(ttlMinutes / 60)}시간 동안 보관되며, 참여자들은 질문과 답변을 열람하고 다운로드할 수 있습니다.`,
+        });
+      } catch (err) {
+        console.error('close_room error:', err);
+      }
+    });
+
+    // 8. Delete room immediately (Host only) - Immediate purge without retention
+    socket.on('delete_room_immediately', async () => {
       try {
         const { slug, isHost } = data;
         if (!slug || !isHost) return;
@@ -341,17 +397,56 @@ export function setupSocketServer(io: SocketIOServer) {
 
         io.to(`room:${slug}`).emit('room_expired', {
           slug,
-          reason: 'HOST_CLOSED',
-          message: '방장이 세션을 종료하였습니다.',
+          reason: 'HOST_DELETED',
+          message: '방장이 세션을 즉시 완전 삭제하였습니다.',
         });
 
         await store.deleteRoom(slug);
 
         if (room?.isCloudPersisted) {
-          await firestoreRepo.deleteRoom(room.id).catch((e) => console.error('Cloud close err:', e));
+          await firestoreRepo.deleteRoom(room.id).catch((e) => console.error('Cloud delete err:', e));
         }
       } catch (err) {
-        console.error('close_room error:', err);
+        console.error('delete_room_immediately error:', err);
+      }
+    });
+
+    // 9. Update room notice (Host only)
+    socket.on('update_notice', async (payload: { notice: string; attachment?: any }) => {
+      try {
+        const { slug, isHost } = data;
+        if (!slug || !isHost) {
+          socket.emit('error', { code: 'FORBIDDEN', message: '공지사항 수정은 호스트만 가능합니다.' });
+          return;
+        }
+
+        const store = getServerStore();
+        const room = await store.getRoom(slug);
+        if (!room) return;
+
+        const noticeText = (payload.notice || '').trim();
+        const attachment = payload.attachment || null;
+
+        await store.updateRoom(slug, {
+          notice: noticeText || null,
+          noticeAttachment: attachment,
+        });
+
+        if (room.isCloudPersisted) {
+          await firestoreRepo.saveRoom({
+            ...room,
+            notice: noticeText || null,
+            noticeAttachment: attachment,
+          }).catch((e) => console.error('Cloud notice save err:', e));
+        }
+
+        io.to(`room:${slug}`).emit('notice_updated', {
+          notice: noticeText || null,
+          attachment,
+        });
+      } catch (err) {
+        console.error('update_notice error:', err);
+        socket.emit('error', { code: 'SERVER_ERROR', message: '공지사항 업데이트 중 오류가 발생했습니다.' });
       }
     });
 

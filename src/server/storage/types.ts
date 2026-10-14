@@ -4,6 +4,7 @@ import { StoredMessage } from '@/types/message';
 export interface VolatileStore {
   createRoom(room: RoomInfo): Promise<void>;
   getRoom(slug: string): Promise<RoomInfo | null>;
+  updateRoom(slug: string, updates: Partial<RoomInfo>): Promise<RoomInfo | null>;
   deleteRoom(slug: string): Promise<void>;
   getAllActiveRooms(): Promise<RoomInfo[]>;
   getExpiredRooms(nowIso: string): Promise<string[]>; // returns slugs

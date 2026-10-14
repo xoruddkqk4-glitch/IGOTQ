@@ -37,7 +37,6 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     const hostTokenHash = hashHostToken(hostToken);
     const newRoomId = `restored-${Date.now()}`;
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 120 * 60 * 1000).toISOString();
 
     const roomTitle = roomData?.title || '저장된 방';
     const newRoom: RoomInfo = {
@@ -47,7 +46,10 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       hostTokenHash,
       hostUid: decoded.uid,
       isCloudPersisted: false,
-      expiresAt,
+      ttlMinutes: roomData?.ttlMinutes || 120,
+      isClosed: false,
+      closedAt: null,
+      expiresAt: null,
       createdAt: now.toISOString(),
       participantCount: 0,
     };

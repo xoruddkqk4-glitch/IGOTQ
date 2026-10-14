@@ -103,9 +103,9 @@ export const ImportDropzone: React.FC = () => {
           <UploadCloud className="w-7 h-7" />
         </div>
         <p className="text-[18px] sm:text-[20px] font-semibold text-[#1d1d1f]">
-          {loading ? '세션 복원 중...' : 'JSON 백업 파일 선택 또는 드래그'}
+          {loading ? '기존 대화 업로드 중...' : 'JSON 백업 파일 선택 또는 드래그'}
         </p>
-        <p className="text-[14px] text-[#86868b] mt-1.5">이전에 저장한 세션을 그대로 복원합니다</p>
+        <p className="text-[14px] text-[#86868b] mt-1.5">이전에 저장한 대화 기록을 그대로 불러옵니다</p>
       </label>
     </div>
   );

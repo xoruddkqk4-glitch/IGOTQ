@@ -20,8 +20,28 @@ export class MemoryStore implements VolatileStore {
   async getRoom(slug: string): Promise<RoomInfo | null> {
     const room = this.rooms.get(slug);
     if (!room) return null;
+
+    // Lazy expiration check: If retention period has passed, purge room and return null
+    const nowTime = Date.now();
+    const maxActiveMs = 24 * 60 * 60 * 1000; // 24 hours fallback for abandoned rooms
+    const isExpired = room.expiresAt && new Date(room.expiresAt).getTime() <= nowTime;
+    const isAbandoned = !room.isClosed && nowTime - new Date(room.createdAt).getTime() > maxActiveMs;
+
+    if (isExpired || isAbandoned) {
+      await this.deleteRoom(slug);
+      return null;
+    }
+
     const count = this.participants.get(slug)?.size || 0;
     return { ...room, participantCount: count };
+  }
+
+  async updateRoom(slug: string, updates: Partial<RoomInfo>): Promise<RoomInfo | null> {
+    const existing = this.rooms.get(slug);
+    if (!existing) return null;
+    const updated = { ...existing, ...updates };
+    this.rooms.set(slug, updated);
+    return updated;
   }
 
   async deleteRoom(slug: string): Promise<void> {
@@ -33,7 +53,12 @@ export class MemoryStore implements VolatileStore {
 
   async getAllActiveRooms(): Promise<RoomInfo[]> {
     const list: RoomInfo[] = [];
+    const nowTime = Date.now();
     for (const [slug, room] of this.rooms.entries()) {
+      // Exclude expired rooms
+      if (room.expiresAt && new Date(room.expiresAt).getTime() <= nowTime) {
+        continue;
+      }
       const count = this.participants.get(slug)?.size || 0;
       list.push({ ...room, participantCount: count });
     }
@@ -43,8 +68,14 @@ export class MemoryStore implements VolatileStore {
   async getExpiredRooms(nowIso: string): Promise<string[]> {
     const expired: string[] = [];
     const nowTime = new Date(nowIso).getTime();
+    const maxActiveMs = 24 * 60 * 60 * 1000;
     for (const [slug, room] of this.rooms.entries()) {
-      if (new Date(room.expiresAt).getTime() <= nowTime) {
+      // 1. Post-close retention duration has passed
+      if (room.expiresAt && new Date(room.expiresAt).getTime() <= nowTime) {
+        expired.push(slug);
+      }
+      // 2. Active room exceeding 24 hours safety limit
+      else if (!room.isClosed && nowTime - new Date(room.createdAt).getTime() > maxActiveMs) {
         expired.push(slug);
       }
     }
