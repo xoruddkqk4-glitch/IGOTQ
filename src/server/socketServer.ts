@@ -175,12 +175,12 @@ export function setupSocketServer(io: SocketIOServer) {
       }
     });
 
-    // 3. Send reply (Host only)
+    // 3. Send reply (Host or Audience replying to Host question)
     socket.on('send_reply', async (payload: { parentId: string; content: string }) => {
       try {
         const { slug, nickname, isHost } = data;
-        if (!slug || !isHost) {
-          socket.emit('error', { code: 'FORBIDDEN', message: '대댓글 답변은 호스트만 작성할 수 있습니다.' });
+        if (!slug || !nickname) {
+          socket.emit('error', { code: 'NOT_IN_ROOM', message: '방에 먼저 입장해야 합니다.' });
           return;
         }
 
@@ -201,16 +201,25 @@ export function setupSocketServer(io: SocketIOServer) {
           return;
         }
 
+        // 호스트이거나, 또는 부모 질문이 호스트가 작성한 질문인 경우 청중 답변 허용
+        const isHostQuestion = Boolean(parentMsg.isHostReply && parentMsg.isQuestion);
+        const canReply = isHost || isHostQuestion;
+        if (!canReply) {
+          socket.emit('error', { code: 'FORBIDDEN', message: '대댓글 답변은 호스트만 작성할 수 있습니다.' });
+          return;
+        }
+
         const { cleanText } = filterProfanity(cleanContent);
+        const isAuthorHost = Boolean(isHost);
 
         const replyMsg: StoredMessage = {
           id: `reply-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           roomId: room.id,
           parentId,
-          nickname: `${nickname}(Host)`,
+          nickname: isAuthorHost ? `${nickname}(Host)` : nickname,
           content: cleanText,
           isQuestion: false,
-          isHostReply: true,
+          isHostReply: isAuthorHost,
           status: 'answered',
           isRestored: false,
           createdAt: new Date().toISOString(),
@@ -218,8 +227,11 @@ export function setupSocketServer(io: SocketIOServer) {
 
         await store.addMessage(slug, replyMsg);
 
-        // Auto mark parent as answered
-        const updatedParent = await store.updateMessage(slug, parentId, { status: 'answered' });
+        // 호스트가 일반 질문에 답변한 경우에만 부모 질문을 자동으로 'answered'로 전환
+        let updatedParent: StoredMessage | null = null;
+        if (isAuthorHost && !isHostQuestion) {
+          updatedParent = await store.updateMessage(slug, parentId, { status: 'answered' });
+        }
 
         if (room.isCloudPersisted) {
           firestoreRepo.saveMessage(room.id, replyMsg).catch((e) => console.error('Cloud reply err:', e));

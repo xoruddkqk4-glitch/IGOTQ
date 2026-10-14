@@ -20,6 +20,7 @@ interface KakaoMessageBubbleProps {
   message: ThreadedMessage;
   isMe: boolean;
   isHost: boolean;
+  currentNickname?: string | null;
   onSendReply: (parentId: string, content: string) => void;
   onToggleStatus: (messageId: string, status: 'pending' | 'answered') => void;
   onDeleteMessage: (messageId: string) => void;
@@ -29,6 +30,7 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
   message,
   isMe,
   isHost,
+  currentNickname,
   onSendReply,
   onToggleStatus,
   onDeleteMessage,
@@ -42,8 +44,15 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
     minute: '2-digit',
   });
 
+  const isHostQuestion = Boolean(message.isQuestion && message.isHostReply);
+  const canReply = isHost || isHostQuestion;
   const isAnswered = message.status === 'answered';
-  const replies = message.replies || [];
+  const rawReplies = message.replies || [];
+
+  // 호스트 질문이고 현재 사용자가 청중인 경우: 블라인드 모드로 본인 답변만 노출
+  const replies = (isHostQuestion && !isHost)
+    ? rawReplies.filter((rep) => rep.nickname === currentNickname)
+    : rawReplies;
 
   const handleReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,17 +167,8 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
           ) : (
             <div className="flex items-center justify-between gap-1 mb-1 text-[11px] font-medium">
               <div className="flex items-center gap-1">
-                {message.isHostReply ? (
-                  <span className="flex items-center gap-1 font-bold text-amber-800 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 text-[10px]">
-                    <Crown className="w-3 h-3 text-amber-600" />
-                    호스트 공지/멘트
-                  </span>
-                ) : (
-                  <>
-                    <MessageSquare className="w-3.5 h-3.5 text-[#0066cc]" />
-                    <span className="font-bold text-[#0066cc]">일반 의견</span>
-                  </>
-                )}
+                <MessageSquare className="w-3.5 h-3.5 text-[#0066cc]" />
+                <span className="font-bold text-[#0066cc]">일반 의견</span>
               </div>
               {isHost && (
                 <button
@@ -202,27 +202,30 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
                     className="flex items-center gap-1 text-[12px] font-semibold text-black/80 hover:text-black transition-colors"
                   >
                     <MessageCircle className="w-3.5 h-3.5 text-[#0066cc]" />
-                    <span>답변 {replies.length}개 {showReplies ? '접기' : '보기'}</span>
+                    <span>
+                      {isHostQuestion && !isHost ? `내 답변 ${replies.length}개` : `답변 ${replies.length}개`}{' '}
+                      {showReplies ? '접기' : '보기'}
+                    </span>
                   </button>
                 ) : (
                   <div className="flex items-center gap-1.5 text-[11px] text-black/60">
                     <Clock className="w-3 h-3 text-[#d70015]" />
-                    <span>발표자 답변 대기 중</span>
+                    <span>{isHostQuestion ? '청중 답변 수집 중' : '발표자 답변 대기 중'}</span>
                   </div>
                 )}
 
-                {/* Host prominent reply button */}
-                {isHost && !isReplying && (
+                {/* Reply Button (Host or Audience on Host Question) */}
+                {canReply && !isReplying && (
                   <button
                     type="button"
                     onClick={() => {
                       setIsReplying(true);
                       setShowReplies(true);
                     }}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-[#0066cc] hover:bg-[#0055b3] text-white text-[11px] font-semibold shadow-xs transition-transform active:scale-95"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-[#0066cc] hover:bg-[#0055b3] text-white text-[11px] font-semibold shadow-xs transition-transform active:scale-95 cursor-pointer"
                   >
                     <MessageCircle className="w-3 h-3" />
-                    <span>발표자 답변 달기</span>
+                    <span>{isHost ? '발표자 답변 달기' : '답변 제출하기'}</span>
                   </button>
                 )}
               </div>
@@ -240,7 +243,7 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
                           <ShieldCheck className="w-3.5 h-3.5" />
                           <span>{rep.nickname}</span>
                           <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#0066cc]/10 text-[#0066cc] font-normal">
-                            발표자 공식 답변
+                            {rep.isHostReply ? '발표자 공식 답변' : '내 제출 답변'}
                           </span>
                         </div>
                         <span className="text-[10px] text-black/50">
@@ -397,17 +400,8 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
             ) : (
               <div className="flex items-center justify-between gap-1 mb-1 text-[11px] text-[#556677]">
                 <div className="flex items-center gap-1">
-                  {message.isHostReply ? (
-                    <span className="flex items-center gap-1 font-bold text-amber-800 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 text-[10px]">
-                      <Crown className="w-3 h-3 text-amber-600" />
-                      호스트 공식 멘트
-                    </span>
-                  ) : (
-                    <>
-                      <MessageSquare className="w-3.5 h-3.5 text-[#86868b]" />
-                      <span className="font-semibold">일반 의견</span>
-                    </>
-                  )}
+                  <MessageSquare className="w-3.5 h-3.5 text-[#86868b]" />
+                  <span className="font-semibold">일반 의견</span>
                 </div>
                 {isHost && (
                   <button
@@ -441,27 +435,30 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
                       className="flex items-center gap-1 font-semibold text-[#0066cc] hover:text-[#0077ed]"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>답변 {replies.length}개 {showReplies ? '접기' : '보기'}</span>
+                      <span>
+                        {isHostQuestion && !isHost ? `내 답변 ${replies.length}개` : `답변 ${replies.length}개`}{' '}
+                        {showReplies ? '접기' : '보기'}
+                      </span>
                     </button>
                   ) : (
                     <div className="flex items-center gap-1.5 text-[11px] text-[#86868b]">
                       <Clock className="w-3 h-3 text-[#ff9500]" />
-                      <span>발표자 답변 대기 중</span>
+                      <span>{isHostQuestion ? '청중 답변 수집 중' : '발표자 답변 대기 중'}</span>
                     </div>
                   )}
 
-                  {/* Host Prominent Reply Button */}
-                  {isHost && !isReplying && (
+                  {/* Reply Button (Host or Audience on Host Question) */}
+                  {canReply && !isReplying && (
                     <button
                       type="button"
                       onClick={() => {
                         setIsReplying(true);
                         setShowReplies(true);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1 rounded-[8px] bg-[#0066cc] hover:bg-[#0055b3] text-white text-[12px] font-semibold shadow-xs transition-all active:scale-95"
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-[8px] bg-[#0066cc] hover:bg-[#0055b3] text-white text-[12px] font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>발표자 답변 달기</span>
+                      <span>{isHost ? '발표자 답변 달기' : '답변 제출하기'}</span>
                     </button>
                   )}
                 </div>
@@ -479,7 +476,7 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
                             <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />
                             <span>{rep.nickname}</span>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/5 text-black font-normal">
-                              발표자 공식 답변
+                              {rep.isHostReply ? '발표자 공식 답변' : (isHostQuestion && !isHost ? '내 제출 답변' : '청중 응답')}
                             </span>
                           </div>
                           <span className="text-[10px] text-[#86868b]">
@@ -497,22 +494,28 @@ export const KakaoMessageBubble = React.memo<KakaoMessageBubbleProps>(({
                   </div>
                 )}
 
-                {/* Host Inline Reply Form */}
-                {isHost && isReplying && (
+                {/* Reply Form */}
+                {canReply && isReplying && (
                   <form onSubmit={handleReplySubmit} className="pt-1.5 space-y-1.5 bg-[#f5f7fa] p-2.5 rounded-[10px] border border-black/[0.08]">
                     <div className="flex items-center justify-between text-[11px] text-[#0066cc] font-semibold">
                       <span className="flex items-center gap-1">
                         <ShieldCheck className="w-3.5 h-3.5" />
-                        발표자 공식 답변 작성
+                        {isHost ? '발표자 공식 답변 작성' : '호스트 질문에 답변 제출'}
                       </span>
-                      <span className="text-[10px] text-[#86868b] font-normal">전송 시 답변완료 자동 전환</span>
+                      <span className="text-[10px] text-[#86868b] font-normal">
+                        {isHost ? '전송 시 답변완료 자동 전환' : '발표 화면에 실시간 집계됩니다'}
+                      </span>
                     </div>
                     <textarea
                       autoFocus
                       rows={2}
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="질문에 대한 발표자 공식 답변을 입력하세요..."
+                      placeholder={
+                        isHost
+                          ? '질문에 대한 발표자 공식 답변을 입력하세요...'
+                          : '호스트 질문에 대한 나의 답변/생각을 입력하세요...'
+                      }
                       className="w-full px-2.5 py-1.5 rounded-[8px] bg-white border border-black/15 text-[13px] text-black outline-none focus:border-[#0066cc] resize-none"
                     />
                     <div className="flex items-center justify-end gap-1.5">

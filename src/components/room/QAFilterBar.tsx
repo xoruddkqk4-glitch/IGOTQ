@@ -1,21 +1,24 @@
 'use client';
 
 import React from 'react';
-import { ArrowUpDown, HelpCircle, CheckCircle2, ListFilter } from 'lucide-react';
+import { ArrowUpDown, HelpCircle, CheckCircle2, ListFilter, MessageSquare } from 'lucide-react';
 
-export type FilterTab = 'all' | 'pending' | 'answered';
+export type FilterTab = 'all' | 'opinion' | 'pending' | 'answered';
 export type SortOption = 'chronological' | 'reverse' | 'pendingFirst';
+
+export interface QAFilterCounts {
+  all: number;
+  opinion: number;
+  pending: number;
+  answered: number;
+}
 
 interface QAFilterBarProps {
   currentTab: FilterTab;
   onTabChange: (tab: FilterTab) => void;
   currentSort: SortOption;
   onSortChange: (sort: SortOption) => void;
-  counts: {
-    all: number;
-    pending: number;
-    answered: number;
-  };
+  counts: QAFilterCounts;
 }
 
 export const QAFilterBar = React.memo<QAFilterBarProps>(({
@@ -28,7 +31,7 @@ export const QAFilterBar = React.memo<QAFilterBarProps>(({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-black/[0.08] mb-5">
       {/* Filter Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-[#e8e8ed] rounded-full self-start">
+      <div className="flex items-center gap-1 p-1 bg-[#e8e8ed] rounded-full self-start flex-wrap">
         <button
           onClick={() => onTabChange('all')}
           className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] transition-all ${
@@ -40,6 +43,19 @@ export const QAFilterBar = React.memo<QAFilterBarProps>(({
           <ListFilter className="w-3.5 h-3.5" />
           <span>전체</span>
           <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-black/[0.06] font-normal">{counts.all}</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('opinion')}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] transition-all ${
+            currentTab === 'opinion'
+              ? 'bg-white text-[#1d1d1f] font-normal shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+              : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
+          }`}
+        >
+          <MessageSquare className="w-3.5 h-3.5 text-[#0066cc]" />
+          <span>의견</span>
+          <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-black/[0.06] font-normal">{counts.opinion}</span>
         </button>
 
         <button

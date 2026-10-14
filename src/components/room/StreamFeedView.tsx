@@ -22,10 +22,12 @@ import {
   ArrowDownCircle,
   HelpCircle,
   MessageSquare,
+  Crown,
 } from 'lucide-react';
 import { RoomInfo, NoticeAttachment } from '@/types/room';
 import { ThreadedMessage } from '@/types/message';
 import { FilePreviewModal } from './FilePreviewModal';
+import { DraggableQRWindow } from './DraggableQRWindow';
 
 interface StreamFeedViewProps {
   room: RoomInfo;
@@ -47,10 +49,18 @@ export const StreamFeedView: React.FC<StreamFeedViewProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [qrDataUrl, setQrDataUrl] = useState('');
-  const [showQrBanner, setShowQrBanner] = useState(false);
+  const [showDraggableQr, setShowDraggableQr] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showFilePreview, setShowFilePreview] = useState(false);
   const [displayHost, setDisplayHost] = useState('igotq.com');
+  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
+
+  const toggleReplies = useCallback((msgId: string) => {
+    setExpandedReplies((prev) => ({
+      ...prev,
+      [msgId]: !prev[msgId],
+    }));
+  }, []);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const feedContainerRef = useRef<HTMLDivElement>(null);
@@ -139,20 +149,20 @@ export const StreamFeedView: React.FC<StreamFeedViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          {/* QR Code Toggle Button */}
+          {/* Draggable Large QR Window Toggle Button */}
           <button
             type="button"
-            onClick={() => setShowQrBanner(!showQrBanner)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              showQrBanner
-                ? 'bg-[#FEE500] text-[#191919] border border-[#e5ce00] shadow-xs'
+            onClick={() => setShowDraggableQr(!showDraggableQr)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              showDraggableQr
+                ? 'bg-[#FEE500] text-[#191919] border border-[#e5ce00] shadow-xs scale-105'
                 : 'bg-[#f0f4f8] hover:bg-[#e4ebf2] text-[#445566]'
             }`}
-            title="청중 접속용 QR 코드 토글"
+            title="청중 접속용 대형 드래그 QR 창 띄우기 / 닫기"
           >
             <QrCode className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">접속 QR</span>
-            {showQrBanner ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {showDraggableQr ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
 
           {/* Auto-scroll Lock Toggle */}
@@ -188,45 +198,7 @@ export const StreamFeedView: React.FC<StreamFeedViewProps> = ({
         </div>
       </header>
 
-      {/* 2. Collapsible Auditorium QR Banner (Optional Dropdown) */}
-      {showQrBanner && (
-        <div className="bg-white/95 backdrop-blur-md border-b border-[#a2b8cc]/60 shadow-[0_4px_16px_rgba(0,0,0,0.06)] px-6 py-4 animate-fade-in">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-6 flex-wrap">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-white rounded-xl border border-black/10 shadow-xs flex-shrink-0">
-                {qrDataUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={qrDataUrl} alt="Join QR" className="w-20 h-20 rounded" />
-                )}
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs font-bold text-[#0066cc] flex items-center gap-1">
-                  <QrCode className="w-3.5 h-3.5" />
-                  <span>스마트폰으로 스캔하여 실시간 참여</span>
-                </div>
-                <div className="flex items-center gap-2 pt-0.5">
-                  <span className="text-sm sm:text-base font-mono font-bold text-[#0066cc] bg-[#f0f4f8] px-3 py-1 rounded-lg border border-[#d0dbe5]">
-                    {displayHost}/{room.slug}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleCopyUrl}
-                    className="p-1.5 rounded-lg bg-[#f0f4f8] hover:bg-[#e4ebf2] text-[#556677] transition-colors"
-                    title="링크 복사"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-[#34c759]" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-            </div>
 
-            <div className="text-right text-xs text-[#667788] hidden sm:block">
-              <p>본 화면은 대형 스크린 전용 <strong>백채널 뷰</strong>입니다.</p>
-              <p className="text-[11px] text-[#86868b] mt-0.5">모든 청중의 멘트와 공식 답변이 좌측 정렬 타임라인으로 실시간 갱신됩니다.</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 3. Top Pinned Announcement Strip */}
       {notice && (
@@ -312,7 +284,9 @@ export const StreamFeedView: React.FC<StreamFeedViewProps> = ({
                 {/* Author Avatar (High-contrast, Large for distance viewing) */}
                 <div
                   className={`w-11 h-11 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-base sm:text-xl font-black shadow-xs border ${
-                    isQuestion
+                    msg.isHostReply
+                      ? 'bg-[#FFF9E6] text-amber-800 border-amber-400 ring-2 ring-amber-300/80'
+                      : isQuestion
                       ? 'bg-[#FFFBE6] text-[#b38600] border-[#fae100]'
                       : 'bg-white text-[#0066cc] border-black/10'
                   }`}
@@ -327,6 +301,14 @@ export const StreamFeedView: React.FC<StreamFeedViewProps> = ({
                     <span className="text-base sm:text-lg lg:text-xl font-black text-[#1d1d1f]">
                       {msg.nickname}
                     </span>
+
+                    {/* Host Identity Badge for Presentation Distance Visibility */}
+                    {msg.isHostReply && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-600/25 text-amber-900 border border-amber-500/40 text-xs sm:text-sm font-black shadow-xs">
+                        <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 flex-shrink-0" />
+                        <span>진행자 (호스트)</span>
+                      </span>
+                    )}
 
                     {/* Mode & Status Badges */}
                     {isQuestion ? (
@@ -382,34 +364,82 @@ export const StreamFeedView: React.FC<StreamFeedViewProps> = ({
                     {msg.content}
                   </div>
 
-                  {/* Speaker Official Replies: Indented directly under the question */}
-                  {replies.length > 0 && (
-                    <div className="ml-4 sm:ml-8 pl-3 sm:pl-5 border-l-4 border-[#f5b800] space-y-2.5 mt-3 pt-1">
-                      {replies.map((rep) => (
-                        <div
-                          key={rep.id}
-                          className="p-4 sm:p-5 rounded-[22px] bg-[#FEE500] border-2 border-[#e5ce00] text-[#191919] shadow-sm"
+                  {/* Accordion Replies: Speaker Answers or Audience Responses */}
+                  {replies.length > 0 && (() => {
+                    const isExpanded = Boolean(expandedReplies[msg.id]);
+                    const isHostQuestion = Boolean(msg.isHostReply && isQuestion);
+
+                    return (
+                      <div className="mt-3.5 space-y-2.5">
+                        {/* Accordion Toggle Trigger Button */}
+                        <button
+                          type="button"
+                          onClick={() => toggleReplies(msg.id)}
+                          className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-black transition-all cursor-pointer shadow-xs active:scale-95 ${
+                            isExpanded
+                              ? 'bg-[#0066cc] text-white hover:bg-[#0055b3] shadow-md'
+                              : isHostQuestion
+                              ? 'bg-white hover:bg-[#f0f4f8] text-[#0066cc] border-2 border-[#0066cc]/40'
+                              : 'bg-white hover:bg-[#fffbe6] text-[#b38600] border-2 border-[#fae100]'
+                          }`}
                         >
-                          <div className="flex items-center gap-2 text-sm sm:text-base font-bold text-[#191919] mb-1.5">
-                            <ShieldCheck className="w-4 h-4 text-[#191919]" />
-                            <span>{rep.nickname}</span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-black/10 text-black font-extrabold">
-                              발표자 공식 답변
-                            </span>
-                            <span className="text-xs text-black/60 font-normal ml-auto">
-                              {new Date(rep.createdAt).toLocaleTimeString('ko-KR', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
+                          <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span>
+                            {isHostQuestion ? '청중 실시간 응답' : '발표자 공식 답변'}{' '}
+                            <span className="underline font-black">{replies.length}개</span>{' '}
+                            {isExpanded ? '접기 ▲' : '모두 펼쳐보기 ▼'}
+                          </span>
+                        </button>
+
+                        {/* Accordion Expanded Content */}
+                        {isExpanded && (
+                          <div className="ml-3 sm:ml-6 pl-3 sm:pl-5 border-l-4 border-[#0066cc]/40 space-y-2.5 pt-1 animate-fade-in">
+                            {replies.map((rep) => (
+                              <div
+                                key={rep.id}
+                                className={`p-4 sm:p-5 rounded-[22px] border text-[#191919] shadow-sm ${
+                                  rep.isHostReply
+                                    ? 'bg-[#FEE500] border-2 border-[#e5ce00]'
+                                    : 'bg-white/95 backdrop-blur-xs border border-black/10'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-[#191919] mb-1.5 flex-wrap">
+                                  {rep.isHostReply ? (
+                                    <Crown className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                                  ) : (
+                                    <div className="w-5 h-5 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center text-[11px] font-black flex-shrink-0">
+                                      {rep.nickname.slice(0, 1).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <span className="font-black text-[#1d1d1f] text-sm sm:text-base">
+                                    {rep.nickname}
+                                  </span>
+                                  <span
+                                    className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                                      rep.isHostReply
+                                        ? 'bg-black/10 text-black'
+                                        : 'bg-[#0066cc]/10 text-[#0066cc]'
+                                    }`}
+                                  >
+                                    {rep.isHostReply ? '발표자 공식 답변' : '청중 응답'}
+                                  </span>
+                                  <span className="text-xs text-[#86868b] font-normal ml-auto">
+                                    {new Date(rep.createdAt).toLocaleTimeString('ko-KR', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                </div>
+                                <p className="text-[#191919] text-[16px] sm:text-[20px] font-bold leading-relaxed whitespace-pre-wrap break-words">
+                                  {rep.content}
+                                </p>
+                              </div>
+                            ))}
                           </div>
-                          <p className="text-[#191919] text-[16px] sm:text-[20px] font-bold leading-relaxed whitespace-pre-wrap break-words">
-                            {rep.content}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -424,6 +454,14 @@ export const StreamFeedView: React.FC<StreamFeedViewProps> = ({
         isOpen={showFilePreview}
         onClose={() => setShowFilePreview(false)}
         attachment={attachment || null}
+      />
+
+      {/* Large Draggable Floating QR Window */}
+      <DraggableQRWindow
+        isOpen={showDraggableQr}
+        onClose={() => setShowDraggableQr(false)}
+        roomTitle={room.title}
+        slug={room.slug}
       />
     </div>
   );

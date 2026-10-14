@@ -297,6 +297,17 @@ export default function RoomPage() {
     };
     setMessages((prev) => [optimisticMsg, ...prev]);
 
+    // 방금 작성한 글이 현재 활성화된 필터에 의해 가려지지 않도록 탭 자동 조정
+    setFilterTab((current) => {
+      if (!isQuestion && (current === 'pending' || current === 'answered')) {
+        return 'all';
+      }
+      if (isQuestion && (current === 'opinion' || current === 'answered')) {
+        return 'all';
+      }
+      return current;
+    });
+
     const socket = getClientSocket();
     socket.emit('send_message', { content, isQuestion, slug, nickname });
   }, [room?.id, slug, nickname, isHost]);
@@ -360,11 +371,13 @@ export default function RoomPage() {
   const filteredMessages = useMemo(() => {
     let list = [...messages];
 
-    // Filter Tab
-    if (filterTab === 'pending') {
-      list = list.filter((m) => m.status === 'pending');
+    // Filter Tab (전체 | 의견 | 미답변 | 답변완료)
+    if (filterTab === 'opinion') {
+      list = list.filter((m) => !m.isQuestion);
+    } else if (filterTab === 'pending') {
+      list = list.filter((m) => m.isQuestion && m.status === 'pending');
     } else if (filterTab === 'answered') {
-      list = list.filter((m) => m.status === 'answered');
+      list = list.filter((m) => m.isQuestion && m.status === 'answered');
     }
 
     // Sort (기본 'chronological': 백채널 뷰와 동일하게 시간순으로 최신글이 아래에 누적)
@@ -385,9 +398,10 @@ export default function RoomPage() {
 
   const counts = useMemo(() => {
     const all = messages.length;
-    const pending = messages.filter((m) => m.status === 'pending').length;
-    const answered = messages.filter((m) => m.status === 'answered').length;
-    return { all, pending, answered };
+    const opinion = messages.filter((m) => !m.isQuestion).length;
+    const pending = messages.filter((m) => m.isQuestion && m.status === 'pending').length;
+    const answered = messages.filter((m) => m.isQuestion && m.status === 'answered').length;
+    return { all, opinion, pending, answered };
   }, [messages]);
 
   if (loading) {
@@ -543,7 +557,9 @@ export default function RoomPage() {
             <div className="py-20 text-center space-y-2 bg-white/60 backdrop-blur-xs rounded-[20px] p-6 max-w-sm mx-auto shadow-xs text-black animate-fade-in mt-6">
               <MessageSquareDashed className="w-8 h-8 text-[#556677] mx-auto" />
               <p className="text-[14px] font-bold text-[#222222]">
-                {filterTab === 'pending'
+                {filterTab === 'opinion'
+                  ? '등록된 의견이 없습니다.'
+                  : filterTab === 'pending'
                   ? '미답변 질문이 없습니다.'
                   : filterTab === 'answered'
                   ? '답변 완료된 질문이 없습니다.'
@@ -560,6 +576,7 @@ export default function RoomPage() {
                 message={msg}
                 isMe={Boolean(nickname && msg.nickname === nickname)}
                 isHost={isHost}
+                currentNickname={nickname}
                 onSendReply={handleSendReply}
                 onToggleStatus={handleToggleStatus}
                 onDeleteMessage={handleDeleteMessage}

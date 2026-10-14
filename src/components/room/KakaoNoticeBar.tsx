@@ -12,7 +12,7 @@ import {
   FileText,
   Eye,
 } from 'lucide-react';
-import { FilterTab, SortOption } from './QAFilterBar';
+import { FilterTab, SortOption, QAFilterCounts } from './QAFilterBar';
 import { NoticeAttachment } from '@/types/room';
 import { FilePreviewModal } from './FilePreviewModal';
 
@@ -27,11 +27,7 @@ interface KakaoNoticeBarProps {
   onTabChange: (tab: FilterTab) => void;
   currentSort: SortOption;
   onSortChange: (sort: SortOption) => void;
-  counts: {
-    all: number;
-    pending: number;
-    answered: number;
-  };
+  counts: QAFilterCounts;
 }
 
 export const KakaoNoticeBar: React.FC<KakaoNoticeBarProps> = ({
@@ -247,10 +243,10 @@ export const KakaoNoticeBar: React.FC<KakaoNoticeBarProps> = ({
         {/* 2. Filter & Sort Strip */}
         <div className="px-3.5 py-2 flex items-center justify-between gap-2 flex-wrap bg-white/70">
           {/* Kakao-style Filter Pills */}
-          <div className="flex items-center gap-1 p-0.5 bg-[#eef1f4] rounded-full">
+          <div className="flex items-center gap-1 p-0.5 bg-[#eef1f4] rounded-full overflow-x-auto">
             <button
               onClick={() => onTabChange('all')}
-              className={`flex items-center gap-1 px-3 py-1 rounded-full text-[12px] font-medium transition-all ${
+              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full text-[12px] font-medium transition-all shrink-0 ${
                 currentTab === 'all'
                   ? 'bg-white text-black shadow-xs font-semibold'
                   : 'text-[#667788] hover:text-black'
@@ -259,6 +255,21 @@ export const KakaoNoticeBar: React.FC<KakaoNoticeBarProps> = ({
               <span>전체</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/5 font-mono">
                 {counts.all}
+              </span>
+            </button>
+
+            <button
+              onClick={() => onTabChange('opinion')}
+              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full text-[12px] font-medium transition-all shrink-0 ${
+                currentTab === 'opinion'
+                  ? 'bg-white text-black shadow-xs font-semibold'
+                  : 'text-[#667788] hover:text-black'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
+              <span>의견</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-mono">
+                {counts.opinion}
               </span>
             </button>
 
