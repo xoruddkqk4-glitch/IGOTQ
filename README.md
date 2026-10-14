@@ -46,7 +46,7 @@
 
 ## 📜 변경 이력 (Changelog)
 
-## [2026-10-14 10:10] 업데이트 이력 (Commit ID: initial release)
+## [2026-10-14 10:10] 업데이트 이력 (Commit ID: b80bd23)
 - **수정 내용**:
   - IGOTQ 초간결성 휘발성 백채널 웹 애플리케이션 전체 풀스택 시스템 신규 구축
   - Next.js 14 App Router + Tailwind v4 + Socket.io 커스텀 서버 (`server.ts`) 구현
